@@ -17,14 +17,14 @@ import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 
 import { useTheme } from '../../../../src/theme/ThemeContext';
 import { selectCurrentUser } from '../../../../src/store/slices/authSlice';
-import { 
-  fetchDashboardData, 
-  selectStats, 
-  selectCharts, 
+import {
+  fetchDashboardData,
+  selectStats,
+  selectCharts,
   selectAlerts,
   selectRecentIssues,
-  selectIsSolverView, 
-  selectDashboardLoading 
+  selectIsSolverView,
+  selectDashboardLoading
 } from '../../../../src/store/slices/dashboardSlice';
 import { selectIsOnline } from '../../../../src/store/slices/offlineSlice';
 import { fetchSolversPerformance, selectAllSolvers } from '../../../../src/store/slices/performanceSlice';
@@ -36,7 +36,7 @@ import ChartDownloadButton from '../../../../src/components/dashboard/ChartDownl
 import Loader from '../../../../src/components/common/Loader';
 import Avatar from '../../../../src/components/common/Avatar';
 import Toast from '../../../../src/components/common/Toast';
-import StatusBadge from '../../../../src/components/common/StatusBadge'; 
+import StatusBadge from '../../../../src/components/common/StatusBadge';
 import FullScreenSpinner from '../../../../src/components/common/FullScreenSpinner';
 import { normaliseRole, ROLES } from '../../../../src/utils/roles';
 
@@ -54,19 +54,19 @@ export default function DashboardScreen() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
   const dispatch = useDispatch();
-  
+
   const user = useSelector(selectCurrentUser);
   const currentRole = normaliseRole(user?.role);
   const stats = useSelector(selectStats);
   const charts = useSelector(selectCharts);
   const alerts = useSelector(selectAlerts) || {};
   const recentIssues = useSelector(selectRecentIssues) || [];
-  const isSolverView = useSelector(selectIsSolverView); 
+  const isSolverView = useSelector(selectIsSolverView);
   const loading = useSelector(selectDashboardLoading);
   const isOnline = useSelector(selectIsOnline);
   const solvers = useSelector(selectAllSolvers);
   const sitesList = useSelector(selectAllSites);
-  const complaintsList = useSelector(selectAllComplaints); 
+  const complaintsList = useSelector(selectAllComplaints);
 
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -80,7 +80,7 @@ export default function DashboardScreen() {
       dispatch(fetchDashboardData(user));
       dispatch(fetchSolversPerformance(user));
       dispatch(fetchSitesWithAnalytics(user));
-      dispatch(fetchComplaints(user)); 
+      dispatch(fetchComplaints(user));
     }
   }, [user, dispatch]);
 
@@ -90,14 +90,14 @@ export default function DashboardScreen() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     dueDate.setHours(0, 0, 0, 0);
-    
+
     const diffTime = dueDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return { text: `Overdue by ${Math.abs(diffDays)}d`, color: '#ef4444' };
-    if (diffDays === 0) return { text: 'Due Today', color: '#f59e0b' }; 
-    if (diffDays === 1) return { text: 'Due Tomorrow', color: '#f59e0b' }; 
-    return { text: `Due in ${diffDays}d`, color: theme.textSecondary }; 
+    if (diffDays === 0) return { text: 'Due Today', color: '#f59e0b' };
+    if (diffDays === 1) return { text: 'Due Tomorrow', color: '#f59e0b' };
+    return { text: `Due in ${diffDays}d`, color: theme.textSecondary };
   };
 
   const onRefresh = useCallback(async () => {
@@ -106,7 +106,7 @@ export default function DashboardScreen() {
       setTimeout(() => setToastMessage(''), 3000);
       return;
     }
-    
+
     setRefreshing(true);
     if (user) {
       try {
@@ -130,14 +130,14 @@ export default function DashboardScreen() {
   const calculatedLineData = useMemo(() => {
     if (currentRole === ROLES.MANAGER) {
       if (!solvers || solvers.length === 0) {
-        return { 
-          labels: ['No Data'], 
-          datasets: [{ data: [0] }], 
+        return {
+          labels: ['No Data'],
+          datasets: [{ data: [0] }],
           legend: ['Solver Workload'],
-          subtitle: 'Total assignments distributed among top solvers.' 
+          subtitle: 'Total assignments distributed among top solvers.'
         };
       }
-      
+
       const topSolvers = [...solvers]
         .sort((a, b) => (b.performance?.total_assigned || 0) - (a.performance?.total_assigned || 0))
         .slice(0, 6);
@@ -148,28 +148,28 @@ export default function DashboardScreen() {
         legend: ['Solver Workload (Total Assignments)'],
         subtitle: 'Total assignments distributed among top solvers.'
       };
-    } 
-    
+    }
+
     if (!recentIssues || recentIssues.length === 0) {
-      return { 
-        labels: ['No Data'], 
-        datasets: [{ data: [0] }], 
+      return {
+        labels: ['No Data'],
+        datasets: [{ data: [0] }],
         legend: ['Recent Volume'],
-        subtitle: 'Trend over the last 7 active days.' 
+        subtitle: 'Trend over the last 7 active days.'
       };
     }
 
-    const validIssues = [...recentIssues].filter(i => 
+    const validIssues = [...recentIssues].filter(i =>
       isSolverView ? (i.due_date || i.created_at) : (i.updated_at || i.created_at)
     );
-    
+
     if (validIssues.length === 0) {
-        return { 
-          labels: ['No Dates'], 
-          datasets: [{ data: [0] }], 
-          legend: ['Missing Date Data'],
-          subtitle: 'No valid dates found to chart.'
-        };
+      return {
+        labels: ['No Dates'],
+        datasets: [{ data: [0] }],
+        legend: ['Missing Date Data'],
+        subtitle: 'No valid dates found to chart.'
+      };
     }
 
     validIssues.sort((a, b) => {
@@ -177,31 +177,31 @@ export default function DashboardScreen() {
       const dateB = isSolverView ? (b.due_date || b.created_at) : (b.updated_at || b.created_at);
       return new Date(dateB) - new Date(dateA);
     });
-    
-    const latestDateStr = isSolverView 
-      ? (validIssues[0].due_date || validIssues[0].created_at) 
+
+    const latestDateStr = isSolverView
+      ? (validIssues[0].due_date || validIssues[0].created_at)
       : (validIssues[0].updated_at || validIssues[0].created_at);
-      
+
     const latestDate = new Date(latestDateStr);
     const startDate = new Date(latestDate);
     startDate.setDate(latestDate.getDate() - 6);
-    
+
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const labels = [];
     const data = [];
-    
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date(latestDate);
       d.setDate(d.getDate() - i);
       labels.push(daysOfWeek[d.getDay()]);
-      
+
       const dateString = d.toISOString().split('T')[0];
-      
+
       const count = recentIssues.filter(issue => {
-          const issueDate = isSolverView ? (issue.due_date || issue.created_at) : (issue.updated_at || issue.created_at);
-          return issueDate?.startsWith(dateString);
+        const issueDate = isSolverView ? (issue.due_date || issue.created_at) : (issue.updated_at || issue.created_at);
+        return issueDate?.startsWith(dateString);
       }).length;
-      
+
       data.push(count);
     }
 
@@ -215,14 +215,14 @@ export default function DashboardScreen() {
     };
   }, [recentIssues, isSolverView, currentRole, solvers]);
 
-  const pieData = charts?.issuesByCategory?.length > 0 
+  const pieData = charts?.issuesByCategory?.length > 0
     ? charts.issuesByCategory.map((item) => ({
-        name: item.name,
-        population: item.count,
-        color: item.color,
-        legendFontColor: theme.text,
-        legendFontSize: 12,
-      })) 
+      name: item.name,
+      population: item.count,
+      color: item.color,
+      legendFontColor: theme.text,
+      legendFontSize: 12,
+    }))
     : [{ name: 'No Data', population: 1, color: isDark ? '#333' : '#e5e5e5', legendFontColor: theme.text, legendFontSize: 12 }];
 
   const calculatedBarData = useMemo(() => {
@@ -240,16 +240,16 @@ export default function DashboardScreen() {
   }, [sitesList]);
 
   const getOptimalSegments = (maxVal) => {
-    if (maxVal === 0) return 1; 
-    if (maxVal <= 8) return maxVal; 
-    return 4; 
+    if (maxVal === 0) return 1;
+    if (maxVal <= 8) return maxVal;
+    return 4;
   };
 
   const lineDataMax = Math.max(...calculatedLineData.datasets[0].data);
   const lineSegments = getOptimalSegments(lineDataMax);
 
-  const barDataMax = calculatedBarData.datasets[0].data.length > 0 
-    ? Math.max(...calculatedBarData.datasets[0].data) 
+  const barDataMax = calculatedBarData.datasets[0].data.length > 0
+    ? Math.max(...calculatedBarData.datasets[0].data)
     : 0;
   const barSegments = getOptimalSegments(barDataMax);
 
@@ -347,12 +347,12 @@ export default function DashboardScreen() {
   const renderHealthCard = (card) => {
     const t = isDark ? card.darkTheme : card.lightTheme;
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         key={card.id}
         style={[
-          styles.healthCard, 
+          styles.healthCard,
           { backgroundColor: t.bg, borderColor: t.border || 'transparent', borderWidth: t.border ? 1 : 0 }
-        ]} 
+        ]}
         onPress={() => router.push(card.route)}
         activeOpacity={0.7}
       >
@@ -374,15 +374,15 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#111111' : '#ffffff' }]}>
-      
+
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: isDark ? '#111111' : '#ffffff' }]}>
         <View style={styles.headerLeft} />
-        
+
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>AI-Operation Kaizen</Text>
         </View>
-        
+
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7} style={styles.bellButton}>
             <Ionicons name="notifications-outline" size={24} color={theme.text} />
@@ -416,7 +416,7 @@ export default function DashboardScreen() {
               <Text style={[styles.liveFeedText, { color: isDark ? '#a3a3a3' : '#6b7280' }]}>LIVE FEED</Text>
             </View>
           </View>
-          
+
           <View style={styles.gridContainer}>
             <View style={styles.gridRow}>
               {renderHealthCard(healthCardsData[0])}
@@ -434,12 +434,12 @@ export default function DashboardScreen() {
           {isSolverView ? (
             <>
               <View style={styles.statsRow}>
-                <DashboardCard 
-                  title="Complaints Logged" 
-                  count={complaintsList?.filter(c => c.target_solver_id === user?.id)?.length || 0} 
-                  icon="warning-outline" 
-                  color="#ef4444" 
-                  style={styles.fullWidthCard} 
+                <DashboardCard
+                  title="Complaints Logged"
+                  count={complaintsList?.filter(c => c.target_solver_id === user?.id)?.length || 0}
+                  icon="warning-outline"
+                  color="#ef4444"
+                  style={styles.fullWidthCard}
                   onPress={() => router.push('/(main)/(tabs)/dashboard/complaints')}
                 />
               </View>
@@ -457,14 +457,14 @@ export default function DashboardScreen() {
           ) : (
             <>
               <View style={styles.statsRow}>
-                <DashboardCard 
-                  title="Total Recorded Complaints" 
+                <DashboardCard
+                  title="Total Recorded Complaints"
                   count={complaintsList?.length || 0}
- 
-                  icon="warning-outline" 
-                  color="#ef4444" 
-                  onPress={() => router.push('/(main)/(tabs)/dashboard/complaints')} 
-                  style={styles.fullWidthCard} 
+
+                  icon="warning-outline"
+                  color="#ef4444"
+                  onPress={() => router.push('/(main)/(tabs)/dashboard/complaints')}
+                  style={styles.fullWidthCard}
                 />
               </View>
               <View style={styles.statsRow}>
@@ -666,17 +666,17 @@ export default function DashboardScreen() {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View ref={lineChartRef} collapsable={false} style={{ backgroundColor: surfaceColor, paddingRight: 16 }}>
-              <LineChart 
-                data={calculatedLineData} 
-                width={SCREEN_WIDTH - 32} 
-                height={220} 
-                chartConfig={chartConfig} 
-                bezier 
-                style={styles.chart} 
-                withInnerLines={true} 
-                withOuterLines={false} 
-                fromZero={true} 
-                segments={lineSegments} 
+              <LineChart
+                data={calculatedLineData}
+                width={SCREEN_WIDTH - 32}
+                height={220}
+                chartConfig={chartConfig}
+                bezier
+                style={styles.chart}
+                withInnerLines={true}
+                withOuterLines={false}
+                fromZero={true}
+                segments={lineSegments}
               />
             </View>
           </ScrollView>
@@ -726,8 +726,8 @@ export default function DashboardScreen() {
                   style={styles.chart}
                   showValuesOnTopOfBars
                   withInnerLines={false}
-                  fromZero={true} 
-                  segments={barSegments} 
+                  fromZero={true}
+                  segments={barSegments}
                 />
               </View>
             </ScrollView>
@@ -748,31 +748,31 @@ export default function DashboardScreen() {
                 <Text style={[styles.realTimeText, { color: theme.textSecondary }]}>Real-time</Text>
               </View>
             </View>
-            
+
             {recentIssues.map((issue, index) => {
-              const targetDate = isSolverView 
-                ? (issue.due_date || issue.created_at) 
+              const targetDate = isSolverView
+                ? (issue.due_date || issue.created_at)
                 : (issue.updated_at || issue.created_at);
-                
+
               const deadline = isSolverView ? getDeadlineIndicator(targetDate) : null;
               const displayDate = targetDate ? formatSafeDate(targetDate) : '';
-              
+
               const datePrefix = isSolverView ? 'Due' : (issue.updated_at ? 'Updated' : 'Opened');
 
               return (
-                <TouchableOpacity 
-                  key={issue.id} 
+                <TouchableOpacity
+                  key={issue.id}
                   style={[styles.issueRow, { paddingTop: index === 0 ? 10 : 16, paddingBottom: 16 }]}
                   onPress={() => router.push({ pathname: '/(main)/(tabs)/dashboard/issue-detail', params: { id: issue.id } })}
                 >
                   <View style={{ marginRight: 14 }}>
-                    <Avatar 
-                      name={issue.site_name} 
+                    <Avatar
+                      name={issue.site_name}
                       uri={`https://i.pravatar.cc/150?u=${issue.id}`}
-                      size="medium" 
+                      size="medium"
                     />
                   </View>
-                  
+
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                       <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text, flexShrink: 1, marginRight: 8 }} numberOfLines={1}>
@@ -782,25 +782,25 @@ export default function DashboardScreen() {
                         {displayDate ? displayDate.toUpperCase() : ''}
                       </Text>
                     </View>
-                    
+
                     <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }} numberOfLines={1}>
                       {issue.title} <Text style={{ fontWeight: '700', textDecorationLine: 'underline', color: theme.text }}>IS-{issue.id}</Text>
                     </Text>
-                    
+
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                       <Text style={{ fontSize: 11, color: theme.textSecondary }}>{datePrefix}</Text>
-                       {deadline && (
-                         <View style={[styles.deadlineBadge, { backgroundColor: `${deadline.color}15` }]}>
-                           <Text style={[styles.deadlineText, { color: deadline.color }]}>{deadline.text}</Text>
-                         </View>
-                       )}
+                      <Text style={{ fontSize: 11, color: theme.textSecondary }}>{datePrefix}</Text>
+                      {deadline && (
+                        <View style={[styles.deadlineBadge, { backgroundColor: `${deadline.color}15` }]}>
+                          <Text style={[styles.deadlineText, { color: deadline.color }]}>{deadline.text}</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
               );
             })}
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.viewAllButton, { borderTopColor: borderColor }]}
               onPress={() => router.push('/(main)/(tabs)/issues')}
             >
