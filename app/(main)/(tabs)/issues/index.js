@@ -34,7 +34,16 @@ import FilterModal from '../../../../src/components/modals/FilterModal';
 import { useDebounce } from '../../../../src/hooks/useDebounce';
 import FullScreenSpinner from '../../../../src/components/common/FullScreenSpinner';
 
-// Strict 2-color palette relies on theme.primary instead of STATUS_COLORS
+// ── PREMIUM STATUS PALETTE FOR CHIPS ──
+const STATUS_COLORS = {
+  OPEN: '#3b82f6',
+  ASSIGNED: '#8b5cf6',
+  IN_PROGRESS: '#eab308',
+  RESOLVED_PENDING_REVIEW: '#f97316',
+  COMPLETED: '#10a37f',
+  REOPENED: '#ef4444',
+  ESCALATED: '#dc2626',
+};
 
 const formatStatusText = (status) => {
   if (!status) return '';
@@ -241,7 +250,6 @@ export default function IssuesTabScreen() {
 
     // 📍 DYNAMIC COLOR CHIPS FOR STATUS
     if (appliedFilters.statuses && appliedFilters.statuses.length > 0) {
-      const STATUS_COLORS = { OPEN: '#3b82f6', ASSIGNED: '#8b5cf6', IN_PROGRESS: '#eab308', RESOLVED_PENDING_REVIEW: '#f97316', COMPLETED: '#10a37f', REOPENED: '#ef4444', ESCALATED: '#dc2626' };
       appliedFilters.statuses.forEach(status => {
         const color = STATUS_COLORS[status] || theme.textSecondary;
         chips.push(
