@@ -11,7 +11,10 @@ import {
   Easing,
   Image,
   TextInput,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
@@ -80,7 +83,8 @@ export default function LoginScreen() {
     }
   };
 
-  const bg = isDark ? '#0F172A' : '#F8FAFC';
+  const bg = isDark ? '#0F172A' : '#FFFFFF';
+  const cardBg = isDark ? '#1E293B' : '#FFFFFF';
   const textColor = isDark ? '#F1F5F9' : '#1E293B';
   const subTextColor = isDark ? '#94A3B8' : '#64748B';
   const primaryColor = '#3B82F6';
@@ -89,14 +93,14 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
-      
+
       <TouchableOpacity
         style={styles.themeToggle}
         onPress={toggleTheme}
         activeOpacity={0.6}
       >
         <Ionicons
-          name={isDark ? 'sunny' : 'moon'} 
+          name={isDark ? 'sunny' : 'moon'}
           size={24}
           color={subTextColor}
         />
@@ -108,21 +112,22 @@ export default function LoginScreen() {
       >
         <View style={styles.staticContent}>
           <Animated.View style={[styles.mainContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            
-            {/* ── LOGO & TITLES ── */}
-            <View style={styles.logoHeader}>
-              <Image
-                source={isDark ? logoDark : logoWhite}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-              <Text style={[styles.title, { color: textColor }]}>Kairox Ai Opex</Text>
-              <Text style={[styles.subtitle, { color: subTextColor }]}>Industrial Issue Tracking</Text>
-            </View>
+            {/* ── LOGO (OUTSIDE) ── */}
+            <Image
+              source={isDark ? logoDark : logoWhite}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
 
-            {/* ── FORM ── */}
-            <View style={styles.form}>
-              
+            {/* ── FULL LOGIN CARD ── */}
+            <View style={[styles.formCard, { backgroundColor: cardBg, borderColor }]}>
+
+              {/* ── TITLES (INSIDE) ── */}
+              <View style={styles.logoHeader}>
+                <Text style={[styles.title, { color: textColor }]}>Kairox Ai Opex</Text>
+                <Text style={[styles.subtitle, { color: subTextColor }]}>Industrial Issue Tracking</Text>
+              </View>
+
               {/* Username */}
               <View style={styles.inputWrapper}>
                 <Text style={[styles.inputLabel, { color: subTextColor }]}>USERNAME</Text>
@@ -198,7 +203,7 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 10,
     padding: 8,
-    backgroundColor: 'rgba(128, 128, 128, 0.1)', 
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
     borderRadius: 20,
   },
   staticContent: {
@@ -210,16 +215,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  
+
   // Header
   logoHeader: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 40,
   },
   logoImage: {
-    width: 300,
-    height: 140,
-    marginBottom: 16,
+    width: width * 1.35,
+    height: (width * 1.35) * (100 / 260), // maintaining aspect ratio approximately
+    marginBottom: 10,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 32,
@@ -229,15 +235,23 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '500',
     textAlign: 'center',
   },
 
-  // Form
-  form: {
+  // Form Card
+  formCard: {
     width: '100%',
     maxWidth: 400,
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 3,
   },
   inputWrapper: {
     marginBottom: 20,
@@ -262,11 +276,11 @@ const styles = StyleSheet.create({
   },
   rawInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: '#1E293B',
   },
   eyeIcon: {
-    padding: 8,
+    padding: 1,
   },
 
   // Button
@@ -286,11 +300,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 14, 
+    borderRadius: 14,
     marginBottom: 20,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)', 
+    borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   errorText: {
     fontSize: 14,
@@ -299,4 +313,4 @@ const styles = StyleSheet.create({
   },
 });
 
-
+
