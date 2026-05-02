@@ -255,8 +255,6 @@ export default function IssueDetailScreen() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const primaryColor = theme.primary || '#2563EB';
-
   const getStatusColor = (status) => {
     const colors = { OPEN: '#3b82f6', ASSIGNED: '#f59e0b', IN_PROGRESS: '#8b5cf6', RESOLVED_PENDING_REVIEW: '#eab308', COMPLETED: '#10a37f', REOPENED: '#ef4444', ESCALATED: '#ef4444' };
     return colors[status] || '#8e8ea0';
@@ -270,31 +268,12 @@ export default function IssueDetailScreen() {
   const bgColor = isDark ? '#212121' : '#f9f9f9';
   const surfaceColor = isDark ? '#171717' : '#ffffff';
   const borderColor = isDark ? '#333333' : '#e5e5e5';
-  const iconBg = isDark ? 'rgba(255,255,255,0.05)' : '#ffffff'; // White for icons inside pastel cards
-  const successAccent = primaryColor; // Replaced green with primary color
-
-  // ── PREMIUM ZOHO-INSPIRED CARD COLORS ──
-  const cardBlue = isDark ? 'rgba(59,130,246,0.12)' : '#eff6ff';
-  const borderBlue = isDark ? 'rgba(59,130,246,0.25)' : '#bfdbfe';
-
-  const cardPurple = isDark ? 'rgba(139,92,246,0.12)' : '#f5f3ff';
-  const borderPurple = isDark ? 'rgba(139,92,246,0.25)' : '#ddd6fe';
-
-  const cardGreen = isDark ? 'rgba(16,185,129,0.12)' : '#ecfdf5';
-  const borderGreen = isDark ? 'rgba(16,185,129,0.25)' : '#a7f3d0';
-
-  const cardOrange = isDark ? 'rgba(249,115,22,0.12)' : '#fff7ed';
-  const borderOrange = isDark ? 'rgba(249,115,22,0.25)' : '#fed7aa';
-
-  const cardRose = isDark ? 'rgba(244,63,94,0.12)' : '#fff1f2';
-  const borderRose = isDark ? 'rgba(244,63,94,0.25)' : '#fecdd3';
-
-  const cardCyan = isDark ? 'rgba(6,182,212,0.12)' : '#ecfeff';
-  const borderCyan = isDark ? 'rgba(6,182,212,0.25)' : '#a5f3fc';
+  const iconBg = isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4';
+  const successAccent = '#10a37f';
 
   const highlightColor = highlightAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [surfaceColor, isDark ? `${primaryColor}25` : `${primaryColor}15`],
+    outputRange: [surfaceColor, isDark ? '#3f3f46' : '#fef9c3'],
   });
 
   return (
@@ -336,12 +315,12 @@ export default function IssueDetailScreen() {
           </View>
         </Animated.View>
 
-        <View style={[styles.card, styles.flatCard, { backgroundColor: cardBlue, borderColor: borderBlue }]}>
+        <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Description</Text>
           <Text style={[styles.description, { color: theme.text }]}>{issue.description}</Text>
         </View>
 
-        <View style={[styles.card, styles.flatCard, { backgroundColor: cardPurple, borderColor: borderPurple }]}>
+        <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Details</Text>
           
           <View style={styles.infoRow}>
@@ -381,11 +360,11 @@ export default function IssueDetailScreen() {
           </View>
         </View>
 
-        <View style={[styles.card, styles.flatCard, { backgroundColor: cardGreen, borderColor: borderGreen }]}>
+        <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>People Involved</Text>
           <View style={styles.peopleGrid}>
             <View style={[styles.personRow, solverName && { borderBottomColor: borderColor, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-              <View style={[styles.avatarCircle, { backgroundColor: primaryColor }]}><Text style={styles.avatarText}>{getInitials(raisedByName)}</Text></View>
+              <View style={[styles.avatarCircle, { backgroundColor: '#3b82f6' }]}><Text style={styles.avatarText}>{getInitials(raisedByName)}</Text></View>
               <View style={styles.personInfo}>
                 <Text style={[styles.personName, { color: theme.text }]} numberOfLines={1}>{raisedByName}</Text>
                 <Text style={[styles.personRole, { color: theme.textSecondary }]}>Raised By</Text>
@@ -394,7 +373,7 @@ export default function IssueDetailScreen() {
             
             {solverName && (
               <View style={[styles.personRow, { paddingTop: 12, paddingBottom: 0 }]}>
-                <View style={[styles.avatarCircle, { backgroundColor: primaryColor }]}><Text style={styles.avatarText}>{getInitials(solverName)}</Text></View>
+                <View style={[styles.avatarCircle, { backgroundColor: '#10a37f' }]}><Text style={styles.avatarText}>{getInitials(solverName)}</Text></View>
                 <View style={styles.personInfo}>
                   <Text style={[styles.personName, { color: theme.text }]} numberOfLines={1}>{solverName}</Text>
                   <Text style={[styles.personRole, { color: theme.textSecondary }]}>Assigned To</Text>
@@ -410,7 +389,7 @@ export default function IssueDetailScreen() {
           </View>
         </View>
 
-        <View style={[styles.card, styles.flatCard, { backgroundColor: cardOrange, borderColor: borderOrange }]}>
+        <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Metadata</Text>
 
           {issue.complaints_count !== undefined && (
@@ -460,14 +439,14 @@ export default function IssueDetailScreen() {
 
         {/* ── IMAGES ── */}
         {issue.images && issue.images.length > 0 && (
-          <View style={[styles.card, styles.flatCard, { backgroundColor: cardRose, borderColor: borderRose }]}>
+          <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
             <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Media Attached</Text>
             {issue.images.map((img, index) => (
               <View key={index} style={styles.imageContainer}>
                 <View style={styles.imageHeader}>
-                  <StatusBadge label={img.image_type} color={primaryColor} />
+                  <StatusBadge label={img.image_type} color={img.image_type === 'BEFORE' ? '#f59e0b' : '#10a37f'} />
                   {img.ai_flag && img.ai_flag !== 'NOT_CHECKED' && (
-                    <StatusBadge label={`AI: ${img.ai_flag}`} color={img.ai_flag === 'OK' ? primaryColor : '#ef4444'} />
+                    <StatusBadge label={`AI: ${img.ai_flag}`} color={img.ai_flag === 'OK' ? '#10a37f' : '#ef4444'} />
                   )}
                 </View>
                 <View style={[styles.imageWrapper, { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0', borderColor }]}><Image source={{ uri: img.image_url }} style={styles.image} resizeMode="cover" /></View>
@@ -482,7 +461,7 @@ export default function IssueDetailScreen() {
 
         {/* ── CALL STATUS ── */}
         {currentAssignment && (currentAssignment.total_call_attempts > 0 || currentAssignment.last_call_status) && (
-          <View style={[styles.card, styles.flatCard, { backgroundColor: cardCyan, borderColor: borderCyan }]}>
+          <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
             <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Call Status</Text>
             <View style={styles.infoRow}>
               <View style={[styles.iconWrapper, { backgroundColor: iconBg }]}><Ionicons name="call-outline" size={18} color={theme.textSecondary} /></View>
@@ -495,7 +474,7 @@ export default function IssueDetailScreen() {
               <View style={[styles.iconWrapper, { backgroundColor: iconBg }]}><Ionicons name="pulse-outline" size={18} color={theme.textSecondary} /></View>
               <View style={styles.infoContent}>
                 <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Last Call Result</Text>
-                <Text style={[styles.infoValue, { color: currentAssignment.last_call_status === 'ANSWERED' ? primaryColor : '#ef4444', textTransform: 'capitalize' }]}>{currentAssignment.last_call_status ? currentAssignment.last_call_status.toLowerCase() : 'Unknown'}</Text>
+                <Text style={[styles.infoValue, { color: currentAssignment.last_call_status === 'ANSWERED' ? '#10a37f' : '#ef4444', textTransform: 'capitalize' }]}>{currentAssignment.last_call_status ? currentAssignment.last_call_status.toLowerCase() : 'Unknown'}</Text>
               </View>
             </View>
           </View>
@@ -549,7 +528,7 @@ export default function IssueDetailScreen() {
                 variant="success" 
                 icon="checkmark-done-circle-outline" 
                 onPress={() => handleReviewAction('APPROVE')} 
-                style={{ backgroundColor: primaryColor, borderColor: primaryColor, borderRadius: 10 }} 
+                style={{ backgroundColor: '#10a37f', borderColor: '#10a37f', borderRadius: 10 }} 
               />
               <Button 
                 title="Reject Fix" 
@@ -609,7 +588,7 @@ const styles = StyleSheet.create({
   personInfo: { flex: 1, justifyContent: 'center' },
   personName: { fontSize: 15, fontWeight: '600', letterSpacing: -0.2, marginBottom: 2 },
   personRole: { fontSize: 13 },
-  phoneBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#333', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, gap: 4 },
+  phoneBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#8b5cf6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, gap: 4 },
   phoneBadgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   imageContainer: { marginBottom: 24 },
   imageHeader: { flexDirection: 'row', gap: 8, marginBottom: 10 },

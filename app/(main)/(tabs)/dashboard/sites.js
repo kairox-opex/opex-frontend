@@ -159,7 +159,9 @@ export default function SitesScreen() {
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.placeholder} />
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={26} color={theme.text} />
+          </TouchableOpacity>
         </View>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Site Directory</Text>
         <View style={styles.headerActions}>
