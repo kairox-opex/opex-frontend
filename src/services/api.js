@@ -163,94 +163,126 @@ export const getStoredUser = async () => {
 
 /**
  * Fetch all issues using Cursor-Based Pagination
- * GET /api/v1/issues
- * Query: ?status_filter= &priority= &site_id= &search= &cursor= &limit=
  */
 export const fetchIssues = async (filters = {}) => {
   console.log('\n📋 ─── FETCH ISSUES ───');
+  
+  /* 
+  // REAL API CALL (REST) - Commented out for now to use enriched mock data
   try {
     const queryParams = {};
-
-    // Map filters to match backend query-param names
     if (filters.status) queryParams.status_filter = filters.status;
     if (filters.priority) queryParams.priority = filters.priority;
     if (filters.site_id) queryParams.site_id = filters.site_id;
     if (filters.search) queryParams.search = filters.search;
-
-    // Cursor-based pagination
     queryParams.limit = filters.limit || 10;
     if (filters.cursor) queryParams.cursor = filters.cursor;
-
-    console.log('📤 [Request] Params:', queryParams);
-    console.log('🌐 [Network] GET /api/v1/issues');
 
     const response = await withRetry(
       () => api.get('/api/v1/issues', { params: queryParams }),
       { maxRetries: 2 }
     );
-
     const data = response.data;
-
-    // Backend may return { items, issues, next_cursor, has_more, total }
     const rawItems = data.items || data.issues || [];
-
-    console.log('✅ [Success] Issues received from backend');
-    console.log(`📊 Items count: ${rawItems.length}`);
-    console.log(`👉 Next Cursor: ${data.next_cursor}`);
-    console.log(`🔄 Has More: ${data.has_more}`);
-    console.log('────────────────────────────────\n');
-
-    // Map backend fields to frontend format
     const issues = rawItems.map((issue) => ({
       ...issue,
       site: issue.site || { name: issue.site_name || 'Unknown Site' },
-      raised_by: issue.raised_by || {
-        name: issue.supervisor_name || 'Supervisor',
-      },
+      raised_by: issue.raised_by || { name: issue.supervisor_name || 'Supervisor' },
     }));
-
-    return {
-      success: true,
-      issues,
-      next_cursor: data.next_cursor || null,
-      has_more: data.has_more ?? false,
-    };
+    return { success: true, issues, next_cursor: data.next_cursor || null, has_more: data.has_more ?? false };
   } catch (error) {
-    console.error('\n❌ ─── FETCH ISSUES FAILED ───');
-    if (error.response) {
-      console.error('🚨 Status:', error.response.status);
-      console.error('🚨 Backend Error Data:', JSON.stringify(error.response.data, null, 2));
-    } else {
-      console.error('🚨 Network/Axios Error:', error.message);
-    }
-    console.error('────────────────────────────────\n');
+    return { success: false, error: error.response?.data?.detail || 'Failed to fetch issues' };
+  }
+  */
+
+  // ENRICHED MOCK LOGIC
+  console.warn('[BACKEND-GAP] issues/list: using enriched mock issues');
+  await new Promise((r) => setTimeout(r, 180));
+
+  let filtered = [...mockIssues];
+  
+  // Role-based filtering for Problem Solvers
+  const storedUserRaw = await AsyncStorage.getItem('auth_user');
+  const user = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+  const role = user?.role;
+
+  if (role === 'problem_solver' || role === 'problemsolver') {
+    // In mock mode, deterministicly filter issues that would be assigned to this user
+    filtered = filtered.filter((i) => {
+      const isAssigned = i.status !== 'OPEN';
+      const solverId = (i.id % 5) + 6;
+      return isAssigned && solverId === user?.id;
+    });
+  }
+
+  if (filters.status) {
+    filtered = filtered.filter((i) => i.status === filters.status);
+  }
+  if (filters.priority) {
+    filtered = filtered.filter((i) => i.priority === filters.priority);
+  }
+  if (filters.site_id) {
+    filtered = filtered.filter((i) => i.site_id === filters.site_id);
+  }
+  if (filters.search) {
+    const q = String(filters.search).toLowerCase();
+    filtered = filtered.filter(
+      (i) =>
+        (i.title || '').toLowerCase().includes(q) ||
+        (i.description || '').toLowerCase().includes(q)
+    );
+  }
+
+  const issuesOut = filtered.map((issue) => {
+    const site = mockSites.find((s) => s.id === issue.site_id);
+    
+    // Deterministic assignment for mock data
+    const solverId = (issue.id % 5) + 6; // IDs 6-10 are solvers
+    const supervisorId = (issue.id % 3) + 1; // IDs 1-3 are supervisors
+    const solver = mockUsers.find(u => u.id === solverId);
+    const supervisor = mockUsers.find(u => u.id === supervisorId);
+
+    const isAssigned = issue.status !== 'OPEN';
 
     return {
-      success: false,
-      error: error.response?.data?.detail || 'Failed to fetch issues',
-      issues: [],
-      next_cursor: null,
-      has_more: false,
+      ...issue,
+      site_name: site?.name || issue.site_name || `Site ${issue.site_id}`,
+      site_location: site?.location || issue.site_location || null,
+      site: site || { name: issue.site_name || `Site ${issue.site_id}` },
+      assigned_to_id: isAssigned ? solverId : null,
+      assigned_to_name: isAssigned ? solver?.name : null,
+      assigned_to_avatar: isAssigned ? solver?.avatar : null,
+      assigned_to_role: isAssigned ? 'Problem Solver' : null,
+      supervisor_name: supervisor?.name || 'System',
+      supervisor_avatar: supervisor?.avatar || null,
+      supervisor_role: 'Supervisor',
+      raised_by: { 
+        name: supervisor?.name || 'System',
+        avatar: supervisor?.avatar || null,
+        role: 'Supervisor'
+      },
     };
-  }
+  });
+
+  return {
+    success: true,
+    issues: issuesOut,
+    next_cursor: null,
+    has_more: false,
+  };
 };
 
 /**
- * Fetch single issue by ID — full detail including images, assignments, complaints count
- * GET /api/v1/issues/{issue_id}
+ * Fetch single issue by ID
  */
 export const fetchIssueById = async (issueId) => {
   console.log(`\n🔎 ─── FETCH ISSUE DETAIL [${issueId}] ───`);
+
+  /*
+  // REAL API CALL (REST) - Commented out for now to use enriched mock data
   try {
-    console.log(`🌐 [Network] GET /api/v1/issues/${issueId}`);
-
     const response = await api.get(`/api/v1/issues/${issueId}`);
-
-    console.log('✅ [Success] Issue detail received from backend');
-
     const raw = response.data;
-
-    // Map backend fields to frontend format
     const issue = {
       ...raw,
       site: raw.site || { name: raw.site_name || 'Unknown Site' },
@@ -262,23 +294,48 @@ export const fetchIssueById = async (issueId) => {
       call_logs: raw.call_logs || [],
       complaints_count: raw.complaints_count ?? 0,
     };
-
     return { success: true, issue };
   } catch (error) {
-    console.error(`\n❌ ─── FETCH ISSUE ${issueId} DETAIL FAILED ───`);
-    if (error.response) {
-      console.error('🚨 Status:', error.response.status);
-      console.error('🚨 Error Data:', JSON.stringify(error.response.data, null, 2));
-    } else {
-      console.error('🚨 Network Error:', error.message);
-    }
-    console.error('────────────────────────────────\n');
-
-    return {
-      success: false,
-      error: error.response?.data?.detail || 'Issue not found',
-    };
+    return { success: false, error: 'Issue not found' };
   }
+  */
+
+  // ENRICHED MOCK LOGIC
+  console.warn(`[BACKEND-GAP] issues/detail: using enriched mock issues for id=${issueId}`);
+  await new Promise((r) => setTimeout(r, 180));
+
+  const raw = mockIssues.find((i) => String(i.id) === String(issueId));
+  if (!raw) return { success: false, error: 'Issue not found' };
+
+  const site = mockSites.find((s) => s.id === raw.site_id);
+  const solverId = (raw.id % 5) + 6;
+  const supervisorId = (raw.id % 3) + 1;
+  const solver = mockUsers.find(u => u.id === solverId);
+  const supervisor = mockUsers.find(u => u.id === supervisorId);
+  const isAssigned = raw.status !== 'OPEN';
+
+  const issue = {
+    ...raw,
+    site_name: site?.name || raw.site_name || `Site ${raw.site_id}`,
+    site_location: site?.location || raw.site_location || null,
+    site: site || { name: raw.site_name || `Site ${raw.site_id}` },
+    assigned_to_id: isAssigned ? solverId : null,
+    assigned_to_name: isAssigned ? solver?.name : null,
+    assigned_to_avatar: isAssigned ? solver?.avatar : null,
+    assigned_to_role: isAssigned ? 'Problem Solver' : null,
+    supervisor_name: supervisor?.name || 'System',
+    supervisor_avatar: supervisor?.avatar || null,
+    supervisor_role: 'Supervisor',
+    raised_by: { 
+      name: supervisor?.name || 'System',
+      avatar: supervisor?.avatar || null,
+      role: 'Supervisor'
+    },
+    images: raw.images || [],
+    call_logs: raw.call_logs || [],
+    complaints_count: raw.complaints_count || 0,
+  };
+  return { success: true, issue };
 };
 
 /**
