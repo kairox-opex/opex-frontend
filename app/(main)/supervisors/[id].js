@@ -17,6 +17,10 @@ import { useTheme } from '../../../src/theme/ThemeContext';
 import Avatar from '../../../src/components/common/Avatar';
 import { fetchSupervisorById } from '../../../src/services/api';
 
+// For enrichment when using mock
+import { issues as mockIssues } from '../../../src/mocks/issues';
+import { sites as mockSites } from '../../../src/mocks/sites';
+
 export default function SupervisorDetailScreen() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
@@ -28,7 +32,6 @@ export default function SupervisorDetailScreen() {
   React.useEffect(() => {
     const loadData = async () => {
       try {
-        console.log(`🔍 Loading supervisor detail for ID: ${id}`);
         const res = await fetchSupervisorById(id);
         if (res.success && res.supervisor) {
           setSupervisor(res.supervisor);
@@ -80,18 +83,39 @@ export default function SupervisorDetailScreen() {
     );
   }
 
-  // Statistics from Backend (Safe handling for "iterator" issues)
-  const counts = supervisor.issue_counts || {};
+  // Handle Statistics (Backend vs Mock)
+  let activeCount = 0;
+  let closedCount = 0;
+  let escalatedCount = 0;
+  let totalCount = 0;
+
+  if (supervisor.issue_counts) {
+    // Real Backend
+    activeCount = supervisor.issue_counts.active || 0;
+    closedCount = supervisor.issue_counts.closed || 0;
+    escalatedCount = supervisor.issue_counts.escalated || 0;
+    totalCount = supervisor.issue_counts.total || 0;
+  } else {
+    // Mock Enrichment
+    const handled = mockIssues.filter((i) => i.raised_by_supervisor_id === supervisor.id);
+    activeCount = handled.filter((i) => ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)).length;
+    closedCount = handled.filter((i) => i.status === 'COMPLETED').length;
+    escalatedCount = handled.filter((i) => i.status === 'ESCALATED').length;
+    totalCount = handled.length;
+  }
+
   const stats = [
-    { label: 'Active Issues', value: counts.active ?? 0, icon: 'alert-circle-outline', color: '#f59e0b' },
-    { label: 'Closed Issues', value: counts.closed ?? 0, icon: 'checkmark-circle-outline', color: '#10b981' },
-    { label: 'Escalated', value: counts.escalated ?? 0, icon: 'warning-outline', color: '#ef4444' },
-    { label: 'Total Issues', value: counts.total ?? 0, icon: 'document-text-outline', color: '#6366f1' },
+    { label: 'Active Issues', value: activeCount, icon: 'alert-circle-outline', color: '#f59e0b' },
+    { label: 'Closed Issues', value: closedCount, icon: 'checkmark-circle-outline', color: '#10b981' },
+    { label: 'Escalated', value: escalatedCount, icon: 'warning-outline', color: '#ef4444' },
+    { label: 'Total Issues', value: totalCount, icon: 'document-text-outline', color: '#6366f1' },
   ];
 
-  // Defensive check: ensure sites is always an array
+  // Assigned Sites handling (IDs to Objects if mock)
   const rawSites = supervisor.sites;
-  const assignedSites = Array.isArray(rawSites) ? rawSites : [];
+  const assignedSites = Array.isArray(rawSites) 
+    ? rawSites.map(s => typeof s === 'object' ? s : mockSites.find(ms => ms.id === s)).filter(Boolean)
+    : [];
 
   // Premium Palette
   const bgColor = isDark ? '#111111' : '#f9fafb';
@@ -103,7 +127,6 @@ export default function SupervisorDetailScreen() {
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: surfaceColor }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
           <Ionicons name="chevron-back" size={26} color={theme.text} />
@@ -118,10 +141,9 @@ export default function SupervisorDetailScreen() {
       </View>
 
       <ScrollView style={[styles.content, { backgroundColor: bgColor }]} showsVerticalScrollIndicator={false}>
-        
         <View style={[styles.profileSection, { backgroundColor: surfaceColor }]}>
           <View style={styles.avatarWrapper}>
-            <Avatar uri={supervisor.avatar_url} name={supervisor.name || 'S'} size="xlarge" />
+            <Avatar uri={supervisor.avatar_url || supervisor.avatar} name={supervisor.name || 'S'} size="xlarge" />
           </View>
           <Text style={[styles.name, { color: theme.text }]}>{supervisor.name || 'Supervisor'}</Text>
           <View style={[styles.roleBadge, { backgroundColor: blueBadgeBg }]}>
@@ -131,18 +153,12 @@ export default function SupervisorDetailScreen() {
 
           <View style={styles.contactActions}>
             {supervisor.tel_link && (
-              <TouchableOpacity 
-                style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]} 
-                onPress={() => handleLink(supervisor.tel_link)}
-              >
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]} onPress={() => handleLink(supervisor.tel_link)}>
                 <Ionicons name="call" size={20} color="#fff" />
               </TouchableOpacity>
             )}
             {supervisor.whatsapp_link && (
-              <TouchableOpacity 
-                style={[styles.actionBtn, { backgroundColor: '#25d366' }]} 
-                onPress={() => handleLink(supervisor.whatsapp_link)}
-              >
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#25d366' }]} onPress={() => handleLink(supervisor.whatsapp_link)}>
                 <Ionicons name="logo-whatsapp" size={20} color="#fff" />
               </TouchableOpacity>
             )}
@@ -174,29 +190,21 @@ export default function SupervisorDetailScreen() {
           </View>
           <View style={[styles.infoContainer, { backgroundColor: surfaceColor, borderColor }]}>
             {assignedSites.length > 0 ? (
-              assignedSites.map((site, index) => {
-                if (!site) return null;
-                return (
-                  <View key={site.id || index}>
-                    <TouchableOpacity 
-                      style={styles.siteRow} 
-                      onPress={() => site.id && router.push(`/(main)/projectflow/${site.id}`)}
-                    >
-                      <View style={[styles.siteIconCircle, { backgroundColor: theme.primary + '15' }]}>
-                        <Ionicons name="location" size={18} color={theme.primary} />
-                      </View>
-                      <View style={styles.infoTextContainer}>
-                        <Text style={[styles.infoValue, { color: theme.text }]}>{site.name || 'Unknown Site'}</Text>
-                        <Text style={styles.infoLabel}>{site.location || 'Active Site'}</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                    </TouchableOpacity>
-                    {index < assignedSites.length - 1 && (
-                      <View style={[styles.separator, { backgroundColor: borderColor }]} />
-                    )}
-                  </View>
-                );
-              })
+              assignedSites.map((site, index) => (
+                <View key={site.id || index}>
+                  <TouchableOpacity style={styles.siteRow} onPress={() => site.id && router.push(`/(main)/projectflow/${site.id}`)}>
+                    <View style={[styles.siteIconCircle, { backgroundColor: theme.primary + '15' }]}>
+                      <Ionicons name="location" size={18} color={theme.primary} />
+                    </View>
+                    <View style={styles.infoTextContainer}>
+                      <Text style={[styles.infoValue, { color: theme.text }]}>{site.name || 'Unknown Site'}</Text>
+                      <Text style={styles.infoLabel}>{site.location || 'Active Site'}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                  {index < assignedSites.length - 1 && <View style={[styles.separator, { backgroundColor: borderColor }]} />}
+                </View>
+              ))
             ) : (
               <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No sites assigned.</Text>
             )}
@@ -230,7 +238,6 @@ export default function SupervisorDetailScreen() {
             </View>
           </View>
         </View>
-
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>

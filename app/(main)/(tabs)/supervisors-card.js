@@ -17,9 +17,12 @@ import Avatar from '../../../src/components/common/Avatar';
 import { backToDashboard } from '../../../src/utils/navigation';
 import { fetchSupervisors } from '../../../src/services/api';
 
+// For enrichment when using mock
+import { issues as mockIssues } from '../../../src/mocks/issues';
+import { sites as mockSites } from '../../../src/mocks/sites';
+
 /**
  * Supervisor directory (MD-only).
- * Reached from MD Dashboard → Supervisors card.
  */
 export default function SupervisorsCardRoute() {
   const { theme, isDark } = useTheme();
@@ -31,10 +34,30 @@ export default function SupervisorsCardRoute() {
   React.useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('🔄 Loading supervisors from backend...');
         const res = await fetchSupervisors();
         if (res.success && Array.isArray(res.supervisors)) {
-          setSupervisors(res.supervisors);
+          // Enrich data (works for both backend and mock)
+          const enriched = res.supervisors.map(u => {
+            // If backend already provided counts, use them. Otherwise calculate from mock.
+            if (u.active_issues_count !== undefined) return u;
+
+            const handled = mockIssues.filter(i => i.raised_by_supervisor_id === u.id);
+            const active = handled.filter(i => ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)).length;
+            const closed = handled.filter(i => i.status === 'COMPLETED').length;
+            const escalated = handled.filter(i => i.status === 'ESCALATED').length;
+            
+            const siteIds = u.sites || [];
+            const siteObjs = Array.isArray(siteIds) ? siteIds.map(sid => typeof sid === 'object' ? sid : mockSites.find(s => s.id === sid)).filter(Boolean) : [];
+            
+            return {
+              ...u,
+              active_issues_count: active,
+              closed_issues_count: closed,
+              escalated_issues_count: escalated,
+              sites: siteObjs
+            };
+          });
+          setSupervisors(enriched);
         }
       } catch (err) {
         console.error('Error loading supervisors:', err);
@@ -69,13 +92,7 @@ export default function SupervisorsCardRoute() {
           data={supervisors}
           keyExtractor={(s) => String(s.id)}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={{ color: theme.textSecondary, marginTop: 40 }}>No supervisors found.</Text>
-            </View>
-          }
           renderItem={({ item }) => {
-            // Defensive handling for sites array
             const rawSites = item.sites;
             const sitesArr = Array.isArray(rawSites) ? rawSites : [];
             const siteNames = sitesArr.map(s => s?.name).filter(Boolean);
@@ -88,16 +105,13 @@ export default function SupervisorsCardRoute() {
               <TouchableOpacity
                 style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
                 activeOpacity={0.7}
-                testID={`supervisor-item-${item.id}`}
                 onPress={() => router.push(`/supervisors/${item.id}`)}
               >
-                <Avatar name={item.name} uri={item.avatar_url} size={50} />
+                <Avatar name={item.name} uri={item.avatar_url || item.avatar} size={50} />
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <View style={styles.nameRow}>
                     <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
-                    {item.is_active !== false && (
-                      <View style={styles.onlineDot} />
-                    )}
+                    {item.is_active !== false && <View style={styles.onlineDot} />}
                   </View>
                   
                   <View style={styles.contactRow}>
@@ -116,20 +130,14 @@ export default function SupervisorsCardRoute() {
 
                   <View style={styles.metaRow}>
                     <View style={[styles.badge, { backgroundColor: theme.warningLight }]}>
-                      <Text style={[styles.badgeText, { color: theme.warning }]}>
-                        {item.active_issues_count || 0} active
-                      </Text>
+                      <Text style={[styles.badgeText, { color: theme.warning }]}>{item.active_issues_count || 0} active</Text>
                     </View>
                     <View style={[styles.badge, { backgroundColor: theme.successLight }]}>
-                      <Text style={[styles.badgeText, { color: theme.success }]}>
-                        {item.closed_issues_count || 0} closed
-                      </Text>
+                      <Text style={[styles.badgeText, { color: theme.success }]}>{item.closed_issues_count || 0} closed</Text>
                     </View>
-                    {(item.escalated_issues_count > 0) && (
+                    {item.escalated_issues_count > 0 && (
                       <View style={[styles.badge, { backgroundColor: '#fee2e2' }]}>
-                        <Text style={[styles.badgeText, { color: '#ef4444' }]}>
-                          {item.escalated_issues_count} escalated
-                        </Text>
+                        <Text style={[styles.badgeText, { color: '#ef4444' }]}>{item.escalated_issues_count} escalated</Text>
                       </View>
                     )}
                   </View>

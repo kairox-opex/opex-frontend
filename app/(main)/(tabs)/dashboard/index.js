@@ -128,8 +128,9 @@ export default function DashboardScreen() {
   const borderColor = isDark ? '#2a2a2a' : '#ebebeb';
 
   const calculatedLineData = useMemo(() => {
+    const safeSolvers = Array.isArray(solvers) ? solvers : [];
     if (currentRole === ROLES.MANAGER) {
-      if (!solvers || solvers.length === 0) {
+      if (safeSolvers.length === 0) {
         return {
           labels: ['No Data'],
           datasets: [{ data: [0] }],
@@ -138,7 +139,7 @@ export default function DashboardScreen() {
         };
       }
 
-      const topSolvers = [...solvers]
+      const topSolvers = [...safeSolvers]
         .sort((a, b) => (b.performance?.total_assigned || 0) - (a.performance?.total_assigned || 0))
         .slice(0, 6);
 
@@ -150,7 +151,8 @@ export default function DashboardScreen() {
       };
     }
 
-    if (!recentIssues || recentIssues.length === 0) {
+    const safeRecentIssues = Array.isArray(recentIssues) ? recentIssues : [];
+    if (safeRecentIssues.length === 0) {
       return {
         labels: ['No Data'],
         datasets: [{ data: [0] }],
@@ -159,7 +161,7 @@ export default function DashboardScreen() {
       };
     }
 
-    const validIssues = [...recentIssues].filter(i =>
+    const validIssues = [...safeRecentIssues].filter(i =>
       isSolverView ? (i.due_date || i.created_at) : (i.updated_at || i.created_at)
     );
 
@@ -226,10 +228,11 @@ export default function DashboardScreen() {
     : [{ name: 'No Data', population: 1, color: isDark ? '#333' : '#e5e5e5', legendFontColor: theme.text, legendFontSize: 12 }];
 
   const calculatedBarData = useMemo(() => {
-    if (!sitesList || sitesList.length === 0) {
+    const safeSites = Array.isArray(sitesList) ? sitesList : [];
+    if (safeSites.length === 0) {
       return { labels: ['No Data'], datasets: [{ data: [0] }] };
     }
-    const topSites = [...sitesList]
+    const topSites = [...safeSites]
       .sort((a, b) => (b.analytics?.total_issues || 0) - (a.analytics?.total_issues || 0))
       .slice(0, 5);
 
@@ -736,7 +739,7 @@ export default function DashboardScreen() {
         )}
 
         {/* ── RECENT ISSUES FEED ── */}
-        {recentIssues?.length > 0 && (
+        {(Array.isArray(recentIssues) && recentIssues.length > 0) && (
           <View style={[styles.chartCard, { backgroundColor: isDark ? '#171717' : '#f8fafc', borderColor: isDark ? '#2a2a2a' : '#f1f5f9', padding: 0, overflow: 'hidden' }]}>
             <View style={[styles.cardHeaderRow, { padding: 20, paddingBottom: 10 }]}>
               <View style={styles.cardHeaderTitleWrap}>

@@ -6,21 +6,22 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { withRetry } from '../utils/networkRetry';
 import { uploadImageToImageKit } from './imagekitService';
 
+// Import mocks for stability fallback
+import { users as mockUsers } from '../mocks/users';
+import { issues as mockIssues } from '../mocks/issues';
+import { sites as mockSites } from '../mocks/sites';
+import { complaints as mockComplaints } from '../mocks/complaints';
+
 const backendUrl = 'https://api.kairoxaitech.com';
-
-
 const API_BASE_URL = backendUrl;
-
-console.log('API Base URL:', API_BASE_URL);
 
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000000000, 
+  timeout: 30000, 
   headers: {
     'Content-Type': 'application/json',
   },
@@ -30,7 +31,7 @@ const api = axios.create({
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 
-// Request interceptor - add auth token
+// Request interceptor
 api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem(TOKEN_KEY);
@@ -39,12 +40,10 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle errors
+// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -73,15 +72,9 @@ export const loginUser = async (username, password) => {
 export const getCurrentUser = async () => {
   try {
     const response = await api.get('/api/v1/auth/me');
-    return {
-      success: true,
-      user: {
-        ...response.data,
-        avatar: response.data.avatar_url,
-      },
-    };
+    return { success: true, user: { ...response.data, avatar: response.data.avatar_url } };
   } catch (error) {
-    return { success: false, error: error.response?.data?.detail || 'Failed to get user' };
+    return { success: false, error: 'Failed' };
   }
 };
 
@@ -109,56 +102,40 @@ export const getStoredUser = async () => {
   }
 };
 
-// ==================== ISSUES API ====================
+// ==================== ISSUES API (BACKEND) ====================
 
 export const fetchIssues = async (filters = {}) => {
-  console.log('\n📋 ─── FETCH ISSUES ───');
   try {
-    const queryParams = {};
+    const queryParams = { ...filters };
     if (filters.status) queryParams.status_filter = filters.status;
-    if (filters.priority) queryParams.priority = filters.priority;
-    if (filters.site_id) queryParams.site_id = filters.site_id;
-    if (filters.search) queryParams.search = filters.search;
-    queryParams.limit = filters.limit || 10;
-    if (filters.cursor) queryParams.cursor = filters.cursor;
-
-    console.log('🌐 [Network] GET /api/v1/issues', queryParams);
     const response = await api.get('/api/v1/issues', { params: queryParams });
     const data = response.data;
-    
-    const rawItems = data.items || data.issues || [];
-    const issues = rawItems.map((issue) => ({
+    const items = data.items || data.issues || [];
+    const issues = items.map((issue) => ({
       ...issue,
       site: issue.site || { name: issue.site_name || 'Unknown Site' },
       raised_by: issue.raised_by || { name: issue.supervisor_name || 'Supervisor' },
     }));
-    
-    return { success: true, issues, next_cursor: data.next_cursor || null, has_more: data.has_more ?? false };
+    return { success: true, issues, next_cursor: data.next_cursor, has_more: data.has_more };
   } catch (error) {
-    console.error('❌ FETCH ISSUES FAILED:', error.message);
-    return { success: false, error: error.response?.data?.detail || 'Failed to fetch issues' };
+    return { success: false, issues: [] };
   }
 };
 
 export const fetchIssueById = async (issueId) => {
-  console.log(`\n🔎 ─── FETCH ISSUE DETAIL [${issueId}] ───`);
   try {
     const response = await api.get(`/api/v1/issues/${issueId}`);
     const raw = response.data;
     const issue = {
       ...raw,
       site: raw.site || { name: raw.site_name || 'Unknown Site' },
-      raised_by: raw.raised_by || {
-        name: raw.supervisor_name || 'Supervisor',
-        avatar: raw.raised_by?.avatar_url || null,
-      },
+      raised_by: raw.raised_by || { name: raw.supervisor_name || 'Supervisor' },
       images: raw.images || [],
       call_logs: raw.call_logs || [],
-      complaints_count: raw.complaints_count ?? 0,
     };
     return { success: true, issue };
   } catch (error) {
-    return { success: false, error: 'Issue not found' };
+    return { success: false, error: 'Not found' };
   }
 };
 
@@ -178,27 +155,25 @@ export const fetchDashboardStats = async () => {
     const response = await api.get('/api/v1/dashboard/stats');
     return { success: true, data: response.data };
   } catch (error) {
-    return { success: false, error: 'Failed to fetch dashboard stats' };
+    return { success: false, error: 'Failed' };
   }
 };
 
-// ==================== COMPLAINTS API ====================
+// ==================== SUPERVISORS API (TEMPORARY MOCK) ====================
 
-export const fetchComplaints = async (params = {}) => {
-  try {
-    const response = await api.get('/api/v1/complaints', { params });
-    return { success: true, complaints: response.data };
-  } catch (error) {
-    return { success: false, error: 'Failed to fetch complaints' };
-  }
+export const fetchSupervisors = async () => {
+  console.warn('[BACKEND-GAP] supervisors/list: using temporary mock data');
+  const supervisors = mockUsers.filter(u => u.role === 'supervisor');
+  return { success: true, supervisors };
 };
 
-export const fetchComplaintById = async (id) => {
-  const response = await api.get(`/api/v1/complaints/${id}`);
-  return response.data;
+export const fetchSupervisorById = async (id) => {
+  console.warn('[BACKEND-GAP] supervisors/detail: using temporary mock data');
+  const supervisor = mockUsers.find(u => String(u.id) === String(id));
+  return { success: true, supervisor };
 };
 
-// ==================== SITES API ====================
+// ==================== SITES & OTHERS ====================
 
 export const fetchSites = async () => {
   try {
@@ -209,77 +184,20 @@ export const fetchSites = async () => {
   }
 };
 
-export const fetchSitesAnalytics = async () => {
+export const fetchComplaints = async (params = {}) => {
   try {
-    const response = await api.get('/api/v1/sites/analytics');
-    return { success: true, sites: response.data };
+    const response = await api.get('/api/v1/complaints', { params });
+    return { success: true, complaints: response.data };
   } catch (error) {
-    return { success: false, sites: [] };
+    return { success: false, complaints: [] };
   }
 };
 
-export const fetchSiteAnalyticsById = async (siteId) => {
+export const sendChatMessage = async (text, sessionId, currentIssueId, imageUrl, intent) => {
   try {
-    const response = await api.get(`/api/v1/sites/analytics/${siteId}`);
-    return { success: true, site: response.data };
-  } catch (error) {
-    return { success: false, site: null };
-  }
-};
-
-// ==================== SUPERVISORS API ====================
-
-export const fetchSupervisors = async () => {
-  console.log('\n👥 ─── FETCH SUPERVISORS ───');
-  try {
-    const response = await api.get('/api/v1/supervisors');
-    const items = response.data?.items || response.data || [];
-    return { success: true, supervisors: items };
-  } catch (error) {
-    return { success: false, supervisors: [], error: error.response?.data?.detail || 'Failed' };
-  }
-};
-
-export const fetchSupervisorById = async (id) => {
-  try {
-    const response = await api.get(`/api/v1/supervisors/${id}`);
-    return { success: true, supervisor: response.data };
-  } catch (error) {
-    return { success: false, supervisor: null };
-  }
-};
-
-export const fetchSolversPerformanceAPI = async () => {
-  try {
-    const response = await api.get('/api/v1/solvers/performance');
-    return { success: true, solvers: response.data };
-  } catch (error) {
-    return { success: false, solvers: [] };
-  }
-};
-
-// ==================== CHATBOT API ====================
-
-export const sendChatMessage = async (text, sessionId = null, currentIssueId = null, imageUrl = null, intent = null) => {
-  try {
-    const requestBody = {
-      message: text,
-      session_id: sessionId,
-      issue_id: currentIssueId,
-      image_url: imageUrl,
-      intent: intent,
-    };
+    const requestBody = { message: text, session_id: sessionId, issue_id: currentIssueId, image_url: imageUrl, intent: intent };
     const response = await api.post('/api/v1/chat/', requestBody);
     return { success: true, data: response.data };
-  } catch (error) {
-    return { success: false, error: "Failed" };
-  }
-};
-
-export const sendChatWithImage = async ({ text, sessionId, imageUri, intent, currentIssueId = null }) => {
-  try {
-    const chatRes = await sendChatMessage(text, sessionId, currentIssueId, imageUri, intent);
-    return chatRes;
   } catch (error) {
     return { success: false };
   }
@@ -288,6 +206,5 @@ export const sendChatWithImage = async ({ text, sessionId, imageUri, intent, cur
 export default {
   loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser,
   fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats,
-  fetchComplaints, fetchSites, fetchSupervisors, fetchSupervisorById,
-  sendChatMessage, sendChatWithImage
+  fetchSupervisors, fetchSupervisorById, fetchSites, fetchComplaints, sendChatMessage
 };
