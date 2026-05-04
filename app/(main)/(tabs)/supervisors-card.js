@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +15,7 @@ import { useTheme } from '../../../src/theme/ThemeContext';
 import RoleGuard from '../../../src/components/navigation/RoleGuard';
 import Avatar from '../../../src/components/common/Avatar';
 import { backToDashboard } from '../../../src/utils/navigation';
-import { users as mockUsers } from '../../../src/mocks/users';
+import { fetchSupervisors } from '../../../src/services/api';
 import { issues as mockIssues } from '../../../src/mocks/issues';
 import { sites as mockSites } from '../../../src/mocks/sites';
 
@@ -23,30 +24,55 @@ import { sites as mockSites } from '../../../src/mocks/sites';
  * Reached from MD Dashboard → Supervisors card.
  */
 export default function SupervisorsCardRoute() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const router = useRouter();
 
-  const supervisors = mockUsers
-    .filter((u) => u.role === 'supervisor')
-    .map((u) => {
-      const handled = mockIssues.filter((i) => i.raised_by_supervisor_id === u.id);
-      const active = handled.filter((i) =>
-        ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)
-      ).length;
-      const closed = handled.filter((i) => i.status === 'COMPLETED').length;
-      const siteIds = u.sites || [];
-      const siteNames = siteIds
-        .map((sid) => mockSites.find((s) => s.id === sid)?.name)
-        .filter(Boolean);
-      return {
-        ...u,
-        issues_total: handled.length,
-        active,
-        closed,
-        sites_label: siteNames.slice(0, 2).join(' · ') +
-          (siteNames.length > 2 ? ` +${siteNames.length - 2}` : ''),
-      };
-    });
+  const [supervisors, setSupervisors] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await fetchSupervisors();
+        if (res.success) {
+          // Enrich mock data with counts and sites for the list view
+          const enriched = res.supervisors.map(u => {
+            const handled = mockIssues.filter(i => i.raised_by_supervisor_id === u.id);
+            const active = handled.filter(i => ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)).length;
+            const closed = handled.filter(i => i.status === 'COMPLETED').length;
+            const escalated = handled.filter(i => i.status === 'ESCALATED').length;
+            
+            const siteIds = u.sites || [];
+            const siteObjs = siteIds.map(sid => mockSites.find(s => s.id === sid)).filter(Boolean);
+            
+            return {
+              ...u,
+              active_issues_count: active,
+              closed_issues_count: closed,
+              escalated_issues_count: escalated,
+              site_objs: siteObjs
+            };
+          });
+          setSupervisors(enriched);
+        }
+      } catch (err) {
+        console.error('Error loading supervisors:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <RoleGuard action="view:supervisorsCard">
@@ -62,19 +88,65 @@ export default function SupervisorsCardRoute() {
           data={supervisors}
           keyExtractor={(s) => String(s.id)}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
-              activeOpacity={0.7}
-              testID={`supervisor-item-${item.id}`}
-              onPress={() => router.push(`/(main)/supervisors/${item.id}`)}
-            >
-              <Avatar name={item.name} uri={item.avatar} size={44} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+            const siteNames = (item.site_objs || []).map(s => s.name);
+            const sitesLabel = siteNames.slice(0, 2).join(' · ') + 
+              (siteNames.length > 2 ? ` +${siteNames.length - 2}` : '');
+
+            return (
+              <TouchableOpacity
+                style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+                activeOpacity={0.7}
+                testID={`supervisor-item-${item.id}`}
+                onPress={() => router.push(`/supervisors/${item.id}`)}
+              >
+                <Avatar name={item.name} uri={item.avatar} size={50} />
+                <View style={{ flex: 1, marginLeft: 14 }}>
+                  <View style={styles.nameRow}>
+                    <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
+                    {item.is_active !== false && (
+                      <View style={styles.onlineDot} />
+                    )}
+                  </View>
+                  
+                  <View style={styles.contactRow}>
+                    <Ionicons name="call-outline" size={12} color={theme.textSecondary} />
+                    <Text style={[styles.contactText, { color: theme.textSecondary }]}>{item.phone}</Text>
+                  </View>
+
+                  {siteNames.length > 0 && (
+                    <View style={styles.siteRow}>
+                      <Ionicons name="business-outline" size={12} color={theme.primary} />
+                      <Text style={[styles.sub, { color: theme.textSecondary }]} numberOfLines={1}>
+                        {sitesLabel}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.metaRow}>
+                    <View style={[styles.badge, { backgroundColor: theme.warningLight }]}>
+                      <Text style={[styles.badgeText, { color: theme.warning }]}>
+                        {item.active_issues_count} active
+                      </Text>
+                    </View>
+                    <View style={[styles.badge, { backgroundColor: theme.successLight }]}>
+                      <Text style={[styles.badgeText, { color: theme.success }]}>
+                        {item.closed_issues_count} closed
+                      </Text>
+                    </View>
+                    {item.escalated_issues_count > 0 && (
+                      <View style={[styles.badge, { backgroundColor: '#fee2e2' }]}>
+                        <Text style={[styles.badgeText, { color: '#ef4444' }]}>
+                          {item.escalated_issues_count} escalated
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+              </TouchableOpacity>
+            );
+          }}
         />
       </SafeAreaView>
     </RoleGuard>
@@ -88,10 +160,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  list: { paddingVertical: 12, paddingHorizontal: 16, gap: 10, paddingBottom: 80 },
-  card: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1 },
-  title: { fontSize: 14, fontWeight: '700' },
-  sub: { fontSize: 12, marginTop: 2 },
-  metaRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  chip: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+  list: { paddingVertical: 12, paddingHorizontal: 16, gap: 12, paddingBottom: 80 },
+  card: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  title: { fontSize: 16, fontWeight: '700' },
+  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  contactText: { fontSize: 12, fontWeight: '500' },
+  siteRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  sub: { fontSize: 12, opacity: 0.8 },
+  metaRow: { flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  badgeText: { fontSize: 10, fontWeight: '700' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

@@ -5,15 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import Avatar from '../../../src/components/common/Avatar';
-import { users as mockUsers } from '../../../src/mocks/users';
+import { fetchSupervisorById } from '../../../src/services/api';
 import { issues as mockIssues } from '../../../src/mocks/issues';
 import { sites as mockSites } from '../../../src/mocks/sites';
 
@@ -22,7 +22,29 @@ export default function SupervisorDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
 
-  const supervisor = mockUsers.find((u) => String(u.id) === String(id));
+  const [supervisor, setSupervisor] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      const res = await fetchSupervisorById(id);
+      if (res.success) {
+        setSupervisor(res.supervisor);
+      }
+      setLoading(false);
+    };
+    loadData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!supervisor) {
     return (
@@ -38,7 +60,7 @@ export default function SupervisorDetailScreen() {
     );
   }
 
-  // Calculate statistics
+  // Calculate statistics from mock data for stability
   const handledIssues = mockIssues.filter((i) => i.raised_by_supervisor_id === supervisor.id);
   const activeCount = handledIssues.filter((i) =>
     ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)
@@ -76,7 +98,6 @@ export default function SupervisorDetailScreen() {
         <TouchableOpacity 
           style={styles.chatButton} 
           onPress={() => router.push(`/chat/personal/${supervisor.id}`)}
-          testID="header-chat-btn"
         >
           <Ionicons name="chatbubble-ellipses" size={24} color={theme.primary} />
         </TouchableOpacity>
@@ -186,6 +207,7 @@ export default function SupervisorDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -201,8 +223,8 @@ const styles = StyleSheet.create({
   
   profileSection: {
     alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 30,
+    paddingTop: 30,
+    paddingBottom: 24,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.03)',
   },
