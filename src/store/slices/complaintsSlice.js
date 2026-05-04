@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import {
   fetchComplaints as fetchComplaintsApi,
   fetchComplaintById as fetchComplaintByIdApi,
@@ -133,25 +133,36 @@ export const selectIsFetchingNextPage = (state) => state.complaints.isFetchingNe
 export const selectHasMoreComplaints = (state) => state.complaints.hasMore;
 export const selectComplaintsNextCursor = (state) => state.complaints.nextCursor;
 
-export const selectFilteredComplaints = (state) => {
-  const { complaints, filters } = state.complaints;
-  
-  // 📍 CHANGED: Safety check to prevent "not iterable" crashes
-  if (!Array.isArray(complaints)) return [];
+export const selectFilteredComplaints = createSelector(
+  [(state) => state.complaints.complaints, (state) => state.complaints.filters],
+  (complaints, filters) => {
+    // Safety check to prevent "not iterable" crashes
+    if (!Array.isArray(complaints)) return [];
 
-  let filtered = [...complaints];
-  
-  if (filters.search) {
-    const searchLower = filters.search.toLowerCase();
-    filtered = filtered.filter(complaint =>
-      // 📍 Match exact backend keys for searching
-      complaint.issue_title?.toLowerCase().includes(searchLower) ||
-      complaint.complaint_details?.toLowerCase().includes(searchLower) ||
-      complaint.id?.toString().includes(searchLower) ||
-      complaint.issue_id?.toString().includes(searchLower)
-    );
+    let filtered = [...complaints];
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(complaint =>
+        complaint.issue_title?.toLowerCase().includes(searchLower) ||
+        complaint.complaint_details?.toLowerCase().includes(searchLower) ||
+        complaint.id?.toString().includes(searchLower) ||
+        complaint.issue_id?.toString().includes(searchLower) ||
+        complaint.site_name?.toLowerCase().includes(searchLower) ||
+        complaint.supervisor_name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Status filtering
+    if (filters.status) {
+      const statusLower = filters.status.toLowerCase();
+      filtered = filtered.filter(complaint => {
+        const complaintStatus = (complaint.status || '').toLowerCase();
+        return complaintStatus === statusLower;
+      });
+    }
+    
+    return filtered;
   }
-  
-  return filtered;
-};
+);
 export default complaintsSlice.reducer;

@@ -36,6 +36,37 @@ import {
   selectComplaintsNextCursor
 } from '../../../../src/store/slices/complaintsSlice';
 
+// ── STATUS FILTER CONFIG ──
+// Values must match backend status field exactly (case-insensitive match in selector)
+const STATUS_FILTERS = [
+  { label: 'All',           value: null },
+  { label: 'Open',          value: 'open' },
+  { label: 'Investigating', value: 'investigating' },
+  { label: 'Escalated',     value: 'escalated' },
+  { label: 'Resolved',      value: 'resolved' },
+  { label: 'Closed',        value: 'closed' },
+];
+
+// ── STATUS → COLOR MAP ──
+const STATUS_COLORS = {
+  open:          { bg: '#fef3c7', text: '#92400e', bgDark: 'rgba(251,191,36,0.2)', textDark: '#fbbf24' },
+  pending:       { bg: '#fef3c7', text: '#92400e', bgDark: 'rgba(251,191,36,0.2)', textDark: '#fbbf24' },
+  investigating: { bg: '#dbeafe', text: '#1e40af', bgDark: 'rgba(59,130,246,0.2)', textDark: '#60a5fa' },
+  escalated:     { bg: '#fce7f3', text: '#9d174d', bgDark: 'rgba(236,72,153,0.2)', textDark: '#f472b6' },
+  resolved:      { bg: '#d1fae5', text: '#065f46', bgDark: 'rgba(16,185,129,0.2)', textDark: '#34d399' },
+  closed:        { bg: '#f3f4f6', text: '#4b5563', bgDark: 'rgba(156,163,175,0.2)', textDark: '#9ca3af' },
+  rejected:      { bg: '#fee2e2', text: '#991b1b', bgDark: 'rgba(239,68,68,0.2)',  textDark: '#f87171' },
+};
+
+const getStatusColor = (status, isDark) => {
+  const key = (status || '').toLowerCase();
+  const colors = STATUS_COLORS[key] || STATUS_COLORS['open'];
+  return {
+    bg: isDark ? colors.bgDark : colors.bg,
+    text: isDark ? colors.textDark : colors.text,
+  };
+};
+
 export default function ComplaintsScreen() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
@@ -52,18 +83,18 @@ export default function ComplaintsScreen() {
   const nextCursor = useSelector(selectComplaintsNextCursor);
   
   const [searchText, setSearchText] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    // ✅ CHANGED: Wrapped user in an object to match the new thunk signature
     if (user) dispatch(fetchComplaints({ user }));
   }, [user]);
 
   useEffect(() => {
-    dispatch(setFilters({ search: searchText }));
-  }, [searchText]);
+    dispatch(setFilters({ search: searchText, status: selectedStatus }));
+  }, [searchText, selectedStatus]);
 
   const onRefresh = useCallback(async () => {
     if (!isOnline) {
@@ -113,11 +144,11 @@ export default function ComplaintsScreen() {
     return `${Math.floor(diffHrs / 24)}d ago`;
   };
 
-  // Helper to map status or assign a mock one based on index for aesthetic matching
-  const getStatusText = (status, index) => {
-    if (status) return status;
-    const mockStatuses = ['Pending', 'Investigating', 'Resolved', 'Closed'];
-    return mockStatuses[index % mockStatuses.length];
+  // Helper to format status text for display
+  const getStatusText = (status) => {
+    if (!status) return 'Pending';
+    // Capitalize first letter
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
   // Premium Palette
@@ -130,8 +161,9 @@ export default function ComplaintsScreen() {
   const cardBgColor = isDark ? '#1c1c1c' : '#ffffff';
   const cardBorderColor = isDark ? '#2a2a2a' : '#f1f5f9';
 
-  const renderItem = ({ item, index }) => {
-    const status = getStatusText(item.status, index);
+  const renderItem = ({ item }) => {
+    const status = getStatusText(item.status);
+    const statusColors = getStatusColor(item.status, isDark);
     
     return (
       <TouchableOpacity
@@ -172,8 +204,8 @@ export default function ComplaintsScreen() {
               <Text style={styles.userRole}>Field Worker</Text>
             </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: isDark ? '#333' : '#f8fafc' }]}>
-            <Text style={[styles.statusText, { color: theme.text }]}>{status}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+            <Text style={[styles.statusText, { color: statusColors.text }]}>{status}</Text>
           </View>
         </View>
         
@@ -229,18 +261,31 @@ export default function ComplaintsScreen() {
       {/* ── FILTER PILLS ── */}
       <View style={styles.chipsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          <TouchableOpacity style={[styles.chip, styles.chipActive]}>
-            <Text style={styles.chipTextActive}>All</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? '#262626' : '#f1f5f9' }]}>
-            <Text style={[styles.chipText, { color: theme.textSecondary }]}>Pending</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? '#262626' : '#f1f5f9' }]}>
-            <Text style={[styles.chipText, { color: theme.textSecondary }]}>Investigating</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: isDark ? '#262626' : '#f1f5f9' }]}>
-            <Text style={[styles.chipText, { color: theme.textSecondary }]}>Resolved</Text>
-          </TouchableOpacity>
+          {STATUS_FILTERS.map((filter) => {
+            const isActive = selectedStatus === filter.value;
+            return (
+              <TouchableOpacity
+                key={filter.label}
+                style={[
+                  styles.chip,
+                  isActive
+                    ? styles.chipActive
+                    : { backgroundColor: isDark ? '#262626' : '#f1f5f9' },
+                ]}
+                onPress={() => setSelectedStatus(filter.value)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    isActive ? styles.chipTextActive : styles.chipText,
+                    !isActive && { color: theme.textSecondary },
+                  ]}
+                >
+                  {filter.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 

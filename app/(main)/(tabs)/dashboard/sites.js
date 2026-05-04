@@ -90,8 +90,18 @@ export default function SitesScreen() {
   const renderItem = ({ item }) => {
     const { analytics } = item || {};
     const health = analytics?.health || 'HEALTHY';
-    const openIssues = (analytics?.open_issues || 0) + (analytics?.in_progress_issues || 0);
-    const activeSolvers = analytics?.active_solvers || analytics?.assigned_issues || 0;
+
+    const totalIssues = (analytics?.total_issues || 0) || 
+      ((analytics?.open_issues || 0) + (analytics?.in_progress_issues || 0) + 
+       (analytics?.resolved_issues || 0) + (analytics?.assigned_issues || 0));
+    const resolvedIssues = analytics?.resolved_issues || analytics?.completed_issues || 0;
+    const overdueIssues = analytics?.overdue_issues || analytics?.overdue || 0;
+    
+    // Site Score: percentage of resolved issues (0-100)
+    const siteScore = totalIssues > 0 
+      ? Math.round((resolvedIssues / totalIssues) * 100) 
+      : 100;
+    const scoreColor = siteScore >= 80 ? '#22c55e' : siteScore >= 50 ? '#eab308' : '#ef4444';
     
     const isCritical = health.toLowerCase() === 'critical';
 
@@ -127,20 +137,27 @@ export default function SitesScreen() {
           <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} style={{ opacity: 0.5, marginLeft: 8 }} />
         </View>
 
-        {/* Bottom Stats Row */}
+        {/* Bottom Stats Row — 3 columns */}
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>OPEN ISSUES</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>SITE SCORE</Text>
             <View style={styles.statValueRow}>
-              <Ionicons name="alert-circle-outline" size={16} color={isCritical ? '#ef4444' : theme.text} />
-              <Text style={[styles.statValue, { color: theme.text }]}>{openIssues}</Text>
+              <Ionicons name="speedometer-outline" size={16} color={scoreColor} />
+              <Text style={[styles.statValue, { color: scoreColor }]}>{siteScore}%</Text>
             </View>
           </View>
           <View style={styles.statBlock}>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>ACTIVE SOLVERS</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>TOTAL ISSUES</Text>
             <View style={styles.statValueRow}>
-              <Ionicons name="build-outline" size={16} color={primaryBlue} />
-              <Text style={[styles.statValue, { color: theme.text }]}>{activeSolvers}</Text>
+              <Ionicons name="documents-outline" size={16} color={primaryBlue} />
+              <Text style={[styles.statValue, { color: theme.text }]}>{totalIssues}</Text>
+            </View>
+          </View>
+          <View style={styles.statBlock}>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>OVERDUE</Text>
+            <View style={styles.statValueRow}>
+              <Ionicons name="time-outline" size={16} color={overdueIssues > 0 ? '#ef4444' : theme.textSecondary} />
+              <Text style={[styles.statValue, { color: overdueIssues > 0 ? '#ef4444' : theme.text }]}>{overdueIssues}</Text>
             </View>
           </View>
         </View>
