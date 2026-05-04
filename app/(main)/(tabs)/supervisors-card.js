@@ -16,8 +16,6 @@ import RoleGuard from '../../../src/components/navigation/RoleGuard';
 import Avatar from '../../../src/components/common/Avatar';
 import { backToDashboard } from '../../../src/utils/navigation';
 import { fetchSupervisors } from '../../../src/services/api';
-import { issues as mockIssues } from '../../../src/mocks/issues';
-import { sites as mockSites } from '../../../src/mocks/sites';
 
 /**
  * Supervisor directory (MD-only).
@@ -33,27 +31,10 @@ export default function SupervisorsCardRoute() {
   React.useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('🔄 Loading supervisors from backend...');
         const res = await fetchSupervisors();
-        if (res.success) {
-          // Enrich mock data with counts and sites for the list view
-          const enriched = res.supervisors.map(u => {
-            const handled = mockIssues.filter(i => i.raised_by_supervisor_id === u.id);
-            const active = handled.filter(i => ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)).length;
-            const closed = handled.filter(i => i.status === 'COMPLETED').length;
-            const escalated = handled.filter(i => i.status === 'ESCALATED').length;
-            
-            const siteIds = u.sites || [];
-            const siteObjs = siteIds.map(sid => mockSites.find(s => s.id === sid)).filter(Boolean);
-            
-            return {
-              ...u,
-              active_issues_count: active,
-              closed_issues_count: closed,
-              escalated_issues_count: escalated,
-              site_objs: siteObjs
-            };
-          });
-          setSupervisors(enriched);
+        if (res.success && Array.isArray(res.supervisors)) {
+          setSupervisors(res.supervisors);
         }
       } catch (err) {
         console.error('Error loading supervisors:', err);
@@ -88,10 +69,20 @@ export default function SupervisorsCardRoute() {
           data={supervisors}
           keyExtractor={(s) => String(s.id)}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.center}>
+              <Text style={{ color: theme.textSecondary, marginTop: 40 }}>No supervisors found.</Text>
+            </View>
+          }
           renderItem={({ item }) => {
-            const siteNames = (item.site_objs || []).map(s => s.name);
-            const sitesLabel = siteNames.slice(0, 2).join(' · ') + 
-              (siteNames.length > 2 ? ` +${siteNames.length - 2}` : '');
+            // Defensive handling for sites array
+            const rawSites = item.sites;
+            const sitesArr = Array.isArray(rawSites) ? rawSites : [];
+            const siteNames = sitesArr.map(s => s?.name).filter(Boolean);
+            
+            const sitesLabel = siteNames.length > 0 
+              ? (siteNames.slice(0, 2).join(' · ') + (siteNames.length > 2 ? ` +${siteNames.length - 2}` : ''))
+              : '';
 
             return (
               <TouchableOpacity
@@ -100,7 +91,7 @@ export default function SupervisorsCardRoute() {
                 testID={`supervisor-item-${item.id}`}
                 onPress={() => router.push(`/supervisors/${item.id}`)}
               >
-                <Avatar name={item.name} uri={item.avatar} size={50} />
+                <Avatar name={item.name} uri={item.avatar_url} size={50} />
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <View style={styles.nameRow}>
                     <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
@@ -111,7 +102,7 @@ export default function SupervisorsCardRoute() {
                   
                   <View style={styles.contactRow}>
                     <Ionicons name="call-outline" size={12} color={theme.textSecondary} />
-                    <Text style={[styles.contactText, { color: theme.textSecondary }]}>{item.phone}</Text>
+                    <Text style={[styles.contactText, { color: theme.textSecondary }]}>{item.phone || 'N/A'}</Text>
                   </View>
 
                   {siteNames.length > 0 && (
@@ -126,15 +117,15 @@ export default function SupervisorsCardRoute() {
                   <View style={styles.metaRow}>
                     <View style={[styles.badge, { backgroundColor: theme.warningLight }]}>
                       <Text style={[styles.badgeText, { color: theme.warning }]}>
-                        {item.active_issues_count} active
+                        {item.active_issues_count || 0} active
                       </Text>
                     </View>
                     <View style={[styles.badge, { backgroundColor: theme.successLight }]}>
                       <Text style={[styles.badgeText, { color: theme.success }]}>
-                        {item.closed_issues_count} closed
+                        {item.closed_issues_count || 0} closed
                       </Text>
                     </View>
-                    {item.escalated_issues_count > 0 && (
+                    {(item.escalated_issues_count > 0) && (
                       <View style={[styles.badge, { backgroundColor: '#fee2e2' }]}>
                         <Text style={[styles.badgeText, { color: '#ef4444' }]}>
                           {item.escalated_issues_count} escalated
@@ -155,10 +146,7 @@ export default function SupervisorsCardRoute() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   headerTitle: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   list: { paddingVertical: 12, paddingHorizontal: 16, gap: 12, paddingBottom: 80 },
   card: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1 },
