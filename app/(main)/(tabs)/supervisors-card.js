@@ -111,13 +111,9 @@ export default function SupervisorsCardRoute() {
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <View style={styles.nameRow}>
                     <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
-                    {item.is_active !== false && <View style={styles.onlineDot} />}
                   </View>
                   
-                  <View style={styles.contactRow}>
-                    <Ionicons name="call-outline" size={12} color={theme.textSecondary} />
-                    <Text style={[styles.contactText, { color: theme.textSecondary }]}>{item.phone || 'N/A'}</Text>
-                  </View>
+
 
                   {siteNames.length > 0 && (
                     <View style={styles.siteRow}>
