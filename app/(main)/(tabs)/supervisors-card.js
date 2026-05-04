@@ -67,24 +67,12 @@ export default function SupervisorsCardRoute() {
               style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
               activeOpacity={0.7}
               testID={`supervisor-item-${item.id}`}
-              onPress={() => router.push(`/chat/personal/${item.id}`)}
+              onPress={() => router.push(`/(main)/supervisors/${item.id}`)}
             >
               <Avatar name={item.name} uri={item.avatar} size={44} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
-                <Text style={[styles.sub, { color: theme.textSecondary }]} numberOfLines={1}>
-                  {item.sites_label || 'Unassigned'}
-                </Text>
-                <View style={styles.metaRow}>
-                  <Text style={[styles.chip, { backgroundColor: theme.warningLight, color: theme.warning }]}>
-                    {item.active} active
-                  </Text>
-                  <Text style={[styles.chip, { backgroundColor: theme.successLight, color: theme.success }]}>
-                    {item.closed} closed
-                  </Text>
-                </View>
               </View>
-              <Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.primary} />
             </TouchableOpacity>
           )}
         />
