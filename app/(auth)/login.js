@@ -93,7 +93,8 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
-
+      <View style={[styles.backgroundDecoration, { backgroundColor: primaryColor + '08' }]} />
+      
       <TouchableOpacity
         style={styles.themeToggle}
         onPress={toggleTheme}
@@ -101,13 +102,13 @@ export default function LoginScreen() {
       >
         <Ionicons
           name={isDark ? 'sunny' : 'moon'}
-          size={24}
+          size={22}
           color={subTextColor}
         />
       </TouchableOpacity>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView 
@@ -115,87 +116,99 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.staticContent}>
-            <View style={styles.mainContent}>
-            {/* ── LOGO (OUTSIDE) ── */}
-            <Image
-              source={isDark ? logoDark : logoWhite}
-              style={[
-                styles.logoImage, 
-                { width: Platform.OS === 'web' ? 220 : width * 1.5 }
-              ]}
-              resizeMode="contain"
-            />
+          <Animated.View 
+            style={[
+              styles.mainContainer, 
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+            ]}
+          >
+            {/* ── LOGO SECTION ── */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={isDark ? logoDark : logoWhite}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
 
-            {/* ── FULL LOGIN CARD ── */}
+            {/* ── FORM SECTION ── */}
             <View style={[styles.formCard, { backgroundColor: cardBg, borderColor }]}>
-
-              {/* ── TITLES (INSIDE) ── */}
-              <View style={styles.logoHeader}>
+              <View style={styles.headerText}>
                 <Text style={[styles.title, { color: textColor }]}>Kairox Ai Opex</Text>
-                <Text style={[styles.subtitle, { color: subTextColor }]}>Industrial Issue Tracking</Text>
+                <Text style={[styles.subtitle, { color: subTextColor }]}>Industrial Intelligence System</Text>
               </View>
 
-              {/* Username */}
-              <View style={styles.inputWrapper}>
-                <Text style={[styles.inputLabel, { color: subTextColor }]}>USERNAME</Text>
-                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor }]}>
-                  <Ionicons name="person-outline" size={20} color={subTextColor} style={styles.inputIcon} />
-                  <TextInput
-                    value={username}
-                    onChangeText={setUsername}
-                    placeholder="Enter your username"
-                    placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
-                    style={[styles.rawInput, { color: textColor }]}
-                    autoCapitalize="none"
-                  />
+              <View style={styles.inputsGroup}>
+                {/* Username */}
+                <View style={styles.inputWrapper}>
+                  <Text style={[styles.inputLabel, { color: subTextColor }]}>ID / USERNAME</Text>
+                  <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor }]}>
+                    <Ionicons name="person-outline" size={20} color={subTextColor} />
+                    <TextInput
+                      value={username}
+                      onChangeText={setUsername}
+                      placeholder="e.g. admin_01"
+                      placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                      style={[styles.rawInput, { color: textColor }]}
+                      autoCapitalize="none"
+                    />
+                  </View>
                 </View>
-              </View>
 
-              {/* Password */}
-              <View style={styles.inputWrapper}>
-                <Text style={[styles.inputLabel, { color: subTextColor }]}>PASSWORD</Text>
-                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor }]}>
-                  <Ionicons name="lock-closed-outline" size={20} color={subTextColor} style={styles.inputIcon} />
-                  <TextInput
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter your password"
-                    placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
-                    secureTextEntry={!showPassword}
-                    style={[styles.rawInput, { color: textColor }]}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={subTextColor} />
-                  </TouchableOpacity>
+                {/* Password */}
+                <View style={styles.inputWrapper}>
+                  <Text style={[styles.inputLabel, { color: subTextColor }]}>SECURITY ACCESS</Text>
+                  <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor }]}>
+                    <Ionicons name="shield-checkmark-outline" size={20} color={subTextColor} />
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                      secureTextEntry={!showPassword}
+                      style={[styles.rawInput, { color: textColor }]}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                      <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={subTextColor} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
               {/* Error Messages */}
               {(validationError || error) && (
-                <View style={[styles.errorContainer, { backgroundColor: `${theme.danger}15` }]}>
-                  <Ionicons name="warning" size={18} color={theme.danger} />
-                  <Text style={[styles.errorText, { color: theme.danger }]}>
+                <View style={[styles.errorContainer, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2', borderColor: 'rgba(239, 68, 68, 0.2)' }]}>
+                  <Ionicons name="alert-circle" size={18} color="#EF4444" />
+                  <Text style={[styles.errorText, { color: "#EF4444" }]}>
                     {validationError || error}
                   </Text>
                 </View>
               )}
 
               {/* Login Button */}
-              <Button
-                title="Continue"
+              <TouchableOpacity 
                 onPress={handleLogin}
-                loading={loading}
-                style={styles.loginButton}
-              />
+                activeOpacity={0.8}
+                disabled={loading}
+                style={[styles.loginButton, { backgroundColor: primaryColor }]}
+              >
+                {loading ? (
+                  <View style={styles.loadingRow}>
+                    <Text style={styles.buttonText}>Authenticating...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.buttonText}>Secure Login</Text>
+                )}
+              </TouchableOpacity>
 
+              <View style={styles.footer}>
+                <Text style={[styles.footerText, { color: subTextColor }]}>
+                  Authorized Personnel Only
+                </Text>
+              </View>
             </View>
-
-            <View style={{ height: 40 }} />
-
-            </View>
-          </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -206,130 +219,151 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  backgroundDecoration: {
+    position: 'absolute',
+    top: -100,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    zIndex: 0,
+  },
   themeToggle: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 10 : 20,
     right: 20,
     zIndex: 10,
-    padding: 8,
-    backgroundColor: 'rgba(128, 128, 128, 0.1)',
-    borderRadius: 20,
+    padding: 10,
+    backgroundColor: 'rgba(128, 128, 128, 0.08)',
+    borderRadius: 12,
   },
   scrollContent: {
     flexGrow: 1,
-  },
-  staticContent: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
     justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
+    paddingBottom: 40,
   },
-  mainContent: {
-    alignItems: 'center',
+  mainContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
     width: '100%',
-    maxWidth: 450, // Constrain content width for web/large screens
+    maxWidth: 480,
     alignSelf: 'center',
   },
-
-  // Header
-  logoHeader: {
+  logoContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
+    marginTop: 20,
   },
   logoImage: {
-    maxWidth: Platform.OS === 'web' ? 700 : undefined,
-    maxHeight: Platform.OS === 'web' ? 200 : undefined,
-    aspectRatio: 260 / 100,
-    marginBottom: 10,
-    alignSelf: 'center',
+    width: '95%',
+    height: 200,
+    maxWidth: 300,
+  },
+  formCard: {
+    width: '100%',
+    padding: 32,
+    borderRadius: 32,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  headerText: {
+    alignItems: 'center',
+    marginBottom: 32,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '900',
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     textAlign: 'center',
+    opacity: 0.8,
+    letterSpacing: 0.2,
   },
-
-  // Form Card
-  formCard: {
-    width: '100%',
-    maxWidth: 400,
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF', // Ensure background is set
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1, // More visible shadow
-    shadowRadius: 20,
-    elevation: 5,
-    marginTop: 10, // Closer to logo
+  inputsGroup: {
+    gap: 18,
+    marginBottom: 24,
   },
   inputWrapper: {
-    marginBottom: 20,
+    gap: 8,
   },
   inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-    marginLeft: 4,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginLeft: 2,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1.5,
     paddingHorizontal: 16,
-    height: 60,
-  },
-  inputIcon: {
-    marginRight: 10,
+    height: 56,
+    gap: 12,
   },
   rawInput: {
     flex: 1,
-    fontSize: 15,
-    color: '#1E293B',
+    fontSize: 16,
+    fontWeight: '500',
   },
   eyeIcon: {
-    padding: 1,
+    padding: 4,
   },
-
-  // Button
   loginButton: {
     height: 60,
-    borderRadius: 16,
-    marginTop: 10,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-
-  // Error
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 14,
+    padding: 16,
+    borderRadius: 16,
     marginBottom: 20,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   errorText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     flex: 1,
+  },
+  footer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    opacity: 0.6,
   },
 });
 
