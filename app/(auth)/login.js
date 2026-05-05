@@ -11,10 +11,9 @@ import {
   Easing,
   Image,
   TextInput,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +28,7 @@ const logoDark = require('../../assets/images/kaizen_logo_dark.png');
 const logoWhite = require('../../assets/images/kaizen_logo_white.jpeg');
 
 export default function LoginScreen() {
+  const { width } = useWindowDimensions();
   const { theme, isDark, toggleTheme } = useTheme();
   const router = useRouter();
   const dispatch = useDispatch();
@@ -107,15 +107,23 @@ export default function LoginScreen() {
       </TouchableOpacity>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
         style={{ flex: 1 }}
       >
-        <View style={styles.staticContent}>
-          <Animated.View style={[styles.mainContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.staticContent}>
+            <View style={styles.mainContent}>
             {/* ── LOGO (OUTSIDE) ── */}
             <Image
               source={isDark ? logoDark : logoWhite}
-              style={styles.logoImage}
+              style={[
+                styles.logoImage, 
+                { width: Platform.OS === 'web' ? 220 : width * 1.5 }
+              ]}
               resizeMode="contain"
             />
 
@@ -186,8 +194,9 @@ export default function LoginScreen() {
 
             <View style={{ height: 40 }} />
 
-          </Animated.View>
-        </View>
+            </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -206,24 +215,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(128, 128, 128, 0.1)',
     borderRadius: 20,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   staticContent: {
     flex: 1,
     paddingHorizontal: 24,
+    paddingVertical: 10,
     justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   mainContent: {
     alignItems: 'center',
     width: '100%',
+    maxWidth: 450, // Constrain content width for web/large screens
+    alignSelf: 'center',
   },
 
   // Header
   logoHeader: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   logoImage: {
-    width: width * 1.50,
-    height: (width * 1.50) * (100 / 260), // maintaining aspect ratio approximately
+    maxWidth: Platform.OS === 'web' ? 700 : undefined,
+    maxHeight: Platform.OS === 'web' ? 200 : undefined,
+    aspectRatio: 260 / 100,
     marginBottom: 10,
     alignSelf: 'center',
   },
@@ -247,11 +265,13 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 24,
     borderWidth: 1,
+    backgroundColor: '#FFFFFF', // Ensure background is set
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1, // More visible shadow
     shadowRadius: 20,
-    elevation: 3,
+    elevation: 5,
+    marginTop: 10, // Closer to logo
   },
   inputWrapper: {
     marginBottom: 20,
