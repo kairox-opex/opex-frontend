@@ -21,11 +21,11 @@ const initialState = {
 
 export const fetchComplaints = createAsyncThunk(
   'complaints/fetchAll',
-  // 📍 CHANGED: Accept an object so we can pass user and cursor
-  async ({ user, cursor = null } = {}, { rejectWithValue }) => {
+  // 📍 CHANGED: Accept an object so we can pass user, cursor, and filters
+  async ({ user, cursor = null, issue_id = null, solver_id = null } = {}, { rejectWithValue }) => {
     try {
-      // 📍 Pass the cursor to your API
-      const result = await fetchComplaintsApi({ cursor });    // ✅ pass user/cursor
+      // 📍 Pass filters to your API
+      const result = await fetchComplaintsApi({ cursor, issue_id, solver_id });
       if (!result.success) {
         return rejectWithValue(result.error);
       }
@@ -42,7 +42,8 @@ export const fetchComplaintById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const result = await fetchComplaintByIdApi(id);
-      return result;
+      if (!result.success) return rejectWithValue(result.error);
+      return result.complaint; // ✅ Extract the complaint object
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch complaint');
     }

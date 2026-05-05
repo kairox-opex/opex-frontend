@@ -294,21 +294,39 @@ export const fetchSitesAnalytics = async () => {
 // For backward compatibility
 export const fetchSites = fetchSitesAnalytics;
 
-export const fetchComplaints = async (params = {}) => {
+export const fetchComplaints = async ({ cursor = null, limit = 20, issue_id = null, solver_id = null } = {}) => {
   try {
+    const params = { limit };
+    if (cursor) params.cursor = cursor;
+    if (issue_id) params.issue_id = issue_id;
+    if (solver_id) params.solver_id = solver_id;
+
     const response = await api.get('/api/v1/complaints', { params });
+    // CursorPage returns { items, next_cursor, has_more, total_returned }
     return { success: true, complaints: response.data };
   } catch (error) {
-    return { success: false, complaints: [] };
+    console.error("fetchComplaints error:", error);
+    return { success: false, complaints: { items: [], has_more: false } };
   }
 };
 
 export const fetchComplaintById = async (id) => {
   try {
+    if (!id) throw new Error("Complaint ID is required");
     const response = await api.get(`/api/v1/complaints/${id}`);
-    return { success: true, complaint: response.data };
+    
+    // Ensure the response data is a valid object
+    if (!response.data || typeof response.data !== 'object') {
+      throw new Error("Invalid response from server");
+    }
+
+    return { 
+      success: true, 
+      complaint: response.data 
+    };
   } catch (error) {
-    return { success: false, error: 'Not found' };
+    console.error(`fetchComplaintById(${id}) error:`, error.message);
+    return { success: false, error: error.message || 'Failed to fetch complaint' };
   }
 };
 

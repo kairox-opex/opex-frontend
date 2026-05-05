@@ -120,6 +120,15 @@ export default function ComplaintsScreen() {
     return mockStatuses[index % mockStatuses.length];
   };
 
+  const getStatusColor = (status) => {
+    const s = String(status).toLowerCase();
+    if (s.includes('pending')) return { bg: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7', text: '#d97706' };
+    if (s.includes('investigating')) return { bg: isDark ? 'rgba(59, 130, 246, 0.15)' : '#dbeafe', text: '#2563eb' };
+    if (s.includes('resolved')) return { bg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7', text: '#059669' };
+    if (s.includes('closed')) return { bg: isDark ? 'rgba(107, 114, 128, 0.15)' : '#f3f4f6', text: '#4b5563' };
+    return { bg: isDark ? '#333' : '#f8fafc', text: theme.textSecondary };
+  };
+
   // Premium Palette
   const bgColor = isDark ? '#111111' : '#ffffff';
   const surfaceColor = isDark ? '#1a1a1a' : '#ffffff';
@@ -132,6 +141,7 @@ export default function ComplaintsScreen() {
 
   const renderItem = ({ item, index }) => {
     const status = getStatusText(item.status, index);
+    const statusColor = getStatusColor(status);
     
     return (
       <TouchableOpacity
@@ -172,8 +182,8 @@ export default function ComplaintsScreen() {
               <Text style={styles.userRole}>Field Worker</Text>
             </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: isDark ? '#333' : '#f8fafc' }]}>
-            <Text style={[styles.statusText, { color: theme.text }]}>{status}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
+            <Text style={[styles.statusText, { color: statusColor.text }]}>{status}</Text>
           </View>
         </View>
         
