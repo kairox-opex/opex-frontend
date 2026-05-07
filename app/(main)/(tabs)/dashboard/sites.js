@@ -186,9 +186,12 @@ export default function SitesScreen() {
         </View>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Site Directory</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity activeOpacity={0.7} style={styles.filterBtn}>
-            <Ionicons name="funnel-outline" size={22} color={theme.text} />
+          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7}>
+            <Avatar uri={user?.avatar} name={user?.name} size="small" />
           </TouchableOpacity>
+          {/* <TouchableOpacity activeOpacity={0.7} style={styles.filterBtn}>
+            <Ionicons name="funnel-outline" size={22} color={theme.text} />
+          </TouchableOpacity> */}
         </View>
       </View>
 

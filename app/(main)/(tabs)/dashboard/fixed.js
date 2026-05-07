@@ -208,9 +208,12 @@ export default function FixedIssuesScreen() {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Resolved Issues</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.bellButton}>
-            <Ionicons name="notifications-outline" size={22} color={theme.text} />
+          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7} style={{ marginRight: 12 }}>
+            <Avatar uri={user?.avatar} name={user?.name} size="small" />
           </TouchableOpacity>
+          {/* <TouchableOpacity style={styles.bellButton}>
+            <Ionicons name="notifications-outline" size={22} color={theme.text} />
+          </TouchableOpacity> */}
         </View>
       </View>
 

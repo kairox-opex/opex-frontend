@@ -224,9 +224,12 @@ export default function NotFixedIssuesScreen() {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Pending Issues</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.bellButton}>
-            <Ionicons name="notifications-outline" size={22} color={theme.text} />
+          <TouchableOpacity onPress={() => router.push('/(main)/profile')} activeOpacity={0.7} style={{ marginRight: 12 }}>
+            <Avatar uri={user?.avatar} name={user?.name} size="small" />
           </TouchableOpacity>
+          {/* <TouchableOpacity style={styles.bellButton}>
+            <Ionicons name="notifications-outline" size={22} color={theme.text} />
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -382,4 +385,4 @@ const styles = StyleSheet.create({
   locationLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   locationText: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
   detailsText: { fontSize: 11, fontWeight: '700', color: '#3b82f6', letterSpacing: 0.5 },
-});
+});
