@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,19 +15,85 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { selectCurrentUser, logoutUser } from '../../src/store/slices/authSlice';
+import { fetchDashboardData, selectRecentIssues, selectDashboardLoading } from '../../src/store/slices/dashboardSlice';
 import Avatar from '../../src/components/common/Avatar';
 import { ROLE_LABELS } from '../../src/utils/constants';
+import { backToDashboard } from '../../src/utils/navigation';
+
+const formatTimeAgo = (dateString) => {
+  if (!dateString) return '';
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return `${Math.floor(diffDays / 7)}w ago`;
+};
 
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
   const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
+  const recentIssues = useSelector(selectRecentIssues);
+  const dashboardLoading = useSelector(selectDashboardLoading);
+
+  useEffect(() => {
+    if (user && (!recentIssues || recentIssues.length === 0)) {
+      dispatch(fetchDashboardData(user));
+    }
+  }, [user, dispatch]);
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
     router.replace('/onboarding');
   };
+
+  // Build activity feed from real API data: recent COMPLETED + ESCALATED issues
+  const activityFeed = useMemo(() => {
+    const safeIssues = Array.isArray(recentIssues) ? recentIssues : [];
+    const approvedItems = safeIssues
+      .filter(i => i.status === 'COMPLETED' || i.status === 'RESOLVED_PENDING_REVIEW')
+      .slice(0, 5)
+      .map(i => ({
+        id: i.id,
+        type: 'approved',
+        text: `Approved Issue #${i.id}`,
+        subtitle: i.title || i.site_name || '',
+        time: formatTimeAgo(i.updated_at || i.created_at),
+        icon: 'checkmark-circle-outline',
+        iconColor: '#10a37f',
+      }));
+
+    const escalatedItems = safeIssues
+      .filter(i => i.status === 'ESCALATED')
+      .slice(0, 5)
+      .map(i => ({
+        id: i.id,
+        type: 'escalated',
+        text: `Escalated Issue #${i.id}`,
+        subtitle: i.site_name || i.title || '',
+        time: formatTimeAgo(i.updated_at || i.created_at),
+        icon: 'flash-outline',
+        iconColor: '#e11d48',
+      }));
+
+    // Interleave and sort by most recent
+    return [...approvedItems, ...escalatedItems]
+      .sort((a, b) => {
+        const issueA = safeIssues.find(i => i.id === a.id);
+        const issueB = safeIssues.find(i => i.id === b.id);
+        const dateA = new Date(issueA?.updated_at || issueA?.created_at || 0);
+        const dateB = new Date(issueB?.updated_at || issueB?.created_at || 0);
+        return dateB - dateA;
+      })
+      .slice(0, 6);
+  }, [recentIssues]);
 
   // Logic untouched
   const getStats = () => {
@@ -73,12 +140,12 @@ export default function ProfileScreen() {
       
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor, borderBottomWidth: 1 }]}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={26} color={theme.text} />
+        <TouchableOpacity onPress={backToDashboard} activeOpacity={0.7} style={styles.backButton}>
+          <Ionicons  name="chevron-back" size={26} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>My Profile</Text>
         <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="settings-outline" size={22} color={theme.text} />
+          {/* <Ionicons name="settings-outline" size={22} color={theme.text} /> */}
         </TouchableOpacity>
       </View>
 
@@ -173,7 +240,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── ACTIVITY FEED (Mockup Match) ── */}
+        {/* ── ACTIVITY FEED (Real API Data) ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionHeaderLeft}>
@@ -183,40 +250,46 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.infoContainer, { backgroundColor: surfaceColor, borderColor, paddingVertical: 12 }]}>
             
-            <View style={styles.timelineRow}>
-              <View style={styles.timelineIconWrap}>
-                <View style={[styles.timelineCircle, { borderColor }]}><Ionicons name="checkmark-circle-outline" size={14} color={theme.text} /></View>
-                <View style={[styles.timelineLine, { backgroundColor: borderColor }]} />
+            {dashboardLoading && activityFeed.length === 0 ? (
+              <View style={styles.feedLoading}>
+                <ActivityIndicator size="small" color={theme.textSecondary} />
+                <Text style={[styles.feedLoadingText, { color: theme.textSecondary }]}>Loading activity…</Text>
               </View>
-              <View style={styles.timelineContent}>
-                <Text style={[styles.timelineText, { color: theme.text }]}>Approved Issue #4421</Text>
-                <Text style={styles.timelineTime}>2h ago</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} style={{ marginLeft: 6 }} />
+            ) : activityFeed.length === 0 ? (
+              <View style={styles.feedEmpty}>
+                <Ionicons name="checkmark-done-outline" size={24} color={theme.textSecondary} />
+                <Text style={[styles.feedEmptyText, { color: theme.textSecondary }]}>No recent activity</Text>
               </View>
-            </View>
-
-            <View style={styles.timelineRow}>
-              <View style={styles.timelineIconWrap}>
-                <View style={[styles.timelineCircle, { borderColor }]}><Ionicons name="flash-outline" size={14} color={redAccent} /></View>
-                <View style={[styles.timelineLine, { backgroundColor: borderColor }]} />
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={[styles.timelineText, { color: theme.text }]}>Escalated Site S-14</Text>
-                <Text style={styles.timelineTime}>5h ago</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} style={{ marginLeft: 6 }} />
-              </View>
-            </View>
-
-            <View style={[styles.timelineRow, { marginBottom: 0 }]}>
-              <View style={styles.timelineIconWrap}>
-                <View style={[styles.timelineCircle, { borderColor }]}><Ionicons name="time-outline" size={14} color={theme.text} /></View>
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={[styles.timelineText, { color: theme.text }]}>Updated Profile Photo</Text>
-                <Text style={styles.timelineTime}>1d ago</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} style={{ marginLeft: 6 }} />
-              </View>
-            </View>
+            ) : (
+              activityFeed.map((item, index) => {
+                const isLast = index === activityFeed.length - 1;
+                return (
+                  <TouchableOpacity
+                    key={`${item.type}-${item.id}`}
+                    activeOpacity={0.7}
+                    // onPress={() => router.push({ pathname: '/(main)/(tabs)/dashboard/issue-detail', params: { id: item.id } })}
+                    style={[styles.timelineRow, isLast && { marginBottom: 0 }]}
+                  >
+                    <View style={styles.timelineIconWrap}>
+                      <View style={[styles.timelineCircle, { borderColor, backgroundColor: isDark ? '#1c1c1c' : '#fff' }]}>
+                        <Ionicons name={item.icon} size={14} color={item.iconColor} />
+                      </View>
+                      {!isLast && <View style={[styles.timelineLine, { backgroundColor: borderColor }]} />}
+                    </View>
+                    <View style={styles.timelineContent}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.timelineText, { color: theme.text }]}>{item.text}</Text>
+                        {!!item.subtitle && (
+                          <Text style={[styles.timelineSubtext, { color: theme.textSecondary }]} numberOfLines={1}>{item.subtitle}</Text>
+                        )}
+                      </View>
+                      <Text style={styles.timelineTime}>{item.time}</Text>
+                      {/* <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} style={{ marginLeft: 6 }} /> */}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
 
           </View>
         </View>
@@ -261,7 +334,7 @@ export default function ProfileScreen() {
             onPress={handleLogout}
           >
             <Ionicons name="log-out-outline" size={20} color="#ffffff" />
-            <Text style={styles.logoutTextSolid}>Sign Out from Account</Text>
+            <Text style={styles.logoutTextSolid}>Sign Out</Text>
           </TouchableOpacity>
           <Text style={styles.footerVersion}>AI-Operation Kaizen Enterprise v2.4.0</Text>
           <Text style={styles.footerSync}>Last synced: Today at 09:42 AM</Text>
@@ -335,11 +408,17 @@ const styles = StyleSheet.create({
   
   timelineRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 16 },
   timelineIconWrap: { alignItems: 'center', marginRight: 14 },
-  timelineCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', zIndex: 2 },
+  timelineCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center', zIndex: 2 },
   timelineLine: { width: 1, flex: 1, position: 'absolute', top: 24, bottom: -16, zIndex: 1 },
   timelineContent: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  timelineText: { flex: 1, fontSize: 13, fontWeight: '600' },
+  timelineText: { fontSize: 13, fontWeight: '600' },
+  timelineSubtext: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
   timelineTime: { fontSize: 11, color: '#9ca3af' },
+
+  feedLoading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 20, gap: 8 },
+  feedLoadingText: { fontSize: 13 },
+  feedEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 24, gap: 8 },
+  feedEmptyText: { fontSize: 13 },
 
   footerSection: { marginTop: 32, paddingHorizontal: 20, alignItems: 'center' },
   logoutButtonSolid: { flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12, gap: 8, marginBottom: 16 },

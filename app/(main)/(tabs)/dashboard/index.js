@@ -529,7 +529,7 @@ export default function DashboardScreen() {
                       icon="document-text-outline"
                       color="#db2777"
                       style={styles.fullWidthCard}
-                      onPress={() => router.push('/(main)/monthly-report')}
+                      onPress={() => router.push({ pathname: '/(main)/coming-soon', params: { feature: 'Monthly Report' } })}
                     />
                   </View>
                 </>
@@ -595,7 +595,7 @@ export default function DashboardScreen() {
                       icon="document-text-outline"
                       color="#db2777"
                       style={styles.fullWidthCard}
-                      onPress={() => router.push('/(main)/monthly-report')}
+                      onPress={() => router.push({ pathname: '/(main)/coming-soon', params: { feature: 'Monthly Report' } })}
                     />
                   </View>
                   <View style={styles.statsRow}>
@@ -605,7 +605,7 @@ export default function DashboardScreen() {
                       icon="settings-outline"
                       color="#f59e0b"
                       style={styles.fullWidthCard}
-                      onPress={() => router.push('/(main)/admin')}
+                      onPress={() => router.push({ pathname: '/(main)/coming-soon', params: { feature: 'Admin' } })}
                     />
                   </View>
                 </>
@@ -641,7 +641,7 @@ export default function DashboardScreen() {
                       count={null}
                       icon="document-text-outline"
                       color="#db2777"
-                      onPress={() => router.push('/(main)/monthly-report')}
+                      onPress={() => router.push({ pathname: '/(main)/coming-soon', params: { feature: 'Monthly Report' } })}
                     />
                   </View>
                 </>
