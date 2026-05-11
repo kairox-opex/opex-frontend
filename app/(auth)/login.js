@@ -128,7 +128,7 @@ function Field({ label, icon, value, onChangeText, placeholder, secureTextEntry,
     Animated.timing(borderAnim, { toValue: focused ? 1 : 0, duration: 250, useNativeDriver: false }).start();
   }, [focused]);
 
-  const animBorderColor = borderAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.primary] });
+  const animBorderColor = borderAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.text] });
   const animBorderWidth = borderAnim.interpolate({ inputRange: [0, 1], outputRange: [1.5, 2] });
 
   return (
@@ -141,7 +141,7 @@ function Field({ label, icon, value, onChangeText, placeholder, secureTextEntry,
           backgroundColor: colors.inputBg,
           borderColor: animBorderColor,
           borderWidth: animBorderWidth,
-          shadowColor: colors.primary,
+          shadowColor: colors.text,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: focused ? 0.2 : 0,
           shadowRadius: focused ? 12 : 0,
@@ -151,7 +151,7 @@ function Field({ label, icon, value, onChangeText, placeholder, secureTextEntry,
         <Ionicons
           name={icon}
           size={20}
-          color={focused ? colors.primary : colors.icon}
+          color={focused ? colors.text : colors.icon}
           style={styles.fieldIcon}
         />
         <TextInput
@@ -227,9 +227,9 @@ export default function LoginScreen() {
     border: isDark ? '#475569' : '#E2E8F0',
     danger: '#EF4444',
     dangerBg: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
-    orb1: isDark ? '#1E3A8A' : '#BFDBFE',
-    orb2: isDark ? '#0C4A6E' : '#BAE6FD',
-    orb3: isDark ? '#312E81' : '#C7D2FE',
+    orb1: isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(203, 213, 225, 0.6)',
+    orb2: isDark ? 'rgba(100, 116, 139, 0.1)' : 'rgba(241, 245, 249, 0.8)',
+    orb3: isDark ? 'rgba(71, 85, 105, 0.15)' : 'rgba(226, 232, 240, 0.7)',
   };
 
   // ─── Entrance & Idle Animations ──────────────────────────────────────────
