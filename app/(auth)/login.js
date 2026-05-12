@@ -14,6 +14,12 @@ import {
   StatusBar,
 } from 'react-native';
 
+import ReAnimated, { 
+  FadeInDown,
+  Layout
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
@@ -110,8 +116,34 @@ function Particle({ x, y, delay, duration, color }) {
   );
 }
 
+// ─── Reusable Animated Character Component ───────────────────────────────────
+const AnimatedChar = ({ char, isPassword, color }) => {
+  return (
+    <ReAnimated.Text 
+      entering={FadeInDown.springify().damping(12).stiffness(200)} 
+      layout={Layout.springify()}
+      style={[styles.charText, { color }]}
+    >
+      {isPassword ? "●" : char}
+    </ReAnimated.Text>
+  );
+};
+
 // ─── Animated Input Field Component ───────────────────────────────────────────
-function Field({ label, icon, value, onChangeText, placeholder, secureTextEntry, colors, inputH, rightAction, entryDelay }) {
+function Field({ 
+  label, 
+  icon, 
+  value, 
+  onChangeText, 
+  placeholder, 
+  secureTextEntry, 
+  colors, 
+  inputH, 
+  rightAction, 
+  entryDelay,
+  autoCapitalize = "none",
+  keyboardType = "default"
+}) {
   const [focused, setFocused] = useState(false);
   const slideAnim = useRef(new Animated.Value(30)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -154,17 +186,38 @@ function Field({ label, icon, value, onChangeText, placeholder, secureTextEntry,
           color={focused ? colors.text : colors.icon}
           style={styles.fieldIcon}
         />
+        
+        {/* Visual Layer */}
+        <View style={styles.visualRow} pointerEvents="none">
+          {value.split('').map((char, i) => (
+            <AnimatedChar 
+              key={`${label}-${i}`} 
+              char={char} 
+              isPassword={secureTextEntry} 
+              color={colors.text} 
+            />
+          ))}
+          {value.length === 0 && (
+            <Text style={[styles.placeholder, { color: colors.placeholder }]}>
+              {placeholder}
+            </Text>
+          )}
+        </View>
+
+        {/* Hidden Input Layer */}
         <TextInput
           value={value}
           onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.placeholder}
           secureTextEntry={secureTextEntry}
-          autoCapitalize="none"
+          autoCapitalize={autoCapitalize}
+          keyboardType={keyboardType}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={[styles.fieldInput, { color: colors.text }]}
+          style={[styles.fieldInput, styles.hiddenInput]}
+          cursorColor={colors.primary}
+          selectionColor={colors.primary + '40'}
         />
+
         {rightAction}
       </Animated.View>
     </Animated.View>
@@ -208,6 +261,20 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
+
+  const handleUsernameChange = (text) => {
+    if (text.length > username.length) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setUsername(text);
+  };
+
+  const handlePasswordChange = (text) => {
+    if (text.length > password.length) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setPassword(text);
+  };
 
   const isTab = isTablet(width);
   const isDesk = isDesktop(width);
@@ -368,7 +435,7 @@ export default function LoginScreen() {
                   label="ID / USERNAME"
                   icon="person-outline"
                   value={username}
-                  onChangeText={setUsername}
+                  onChangeText={handleUsernameChange}
                   placeholder="e.g. admin_01"
                   colors={C}
                   inputH={56}
@@ -378,7 +445,7 @@ export default function LoginScreen() {
                   label="SECURITY ACCESS"
                   icon="shield-checkmark-outline"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={handlePasswordChange}
                   placeholder="••••••••"
                   secureTextEntry={!showPassword}
                   colors={C}
@@ -561,8 +628,30 @@ const styles = StyleSheet.create({
       web: { outlineWidth: 0 }
     })
   },
+  hiddenInput: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0,
+    zIndex: 10,
+    paddingLeft: 48, // offset for icon
+  },
+  visualRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+  },
+  charText: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginRight: 1,
+  },
+  placeholder: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   eyeIcon: {
-    padding: 4,
+    padding: 8,
+    zIndex: 20,
   },
   errorBox: {
     flexDirection: 'row',
