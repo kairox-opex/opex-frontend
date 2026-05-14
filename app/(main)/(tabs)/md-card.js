@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { selectCurrentUser } from '../../../src/store/slices/authSlice';
 import RoleGuard from '../../../src/components/navigation/RoleGuard';
 import Avatar from '../../../src/components/common/Avatar';
 import { backToDashboard } from '../../../src/utils/navigation';
-import { users as mockUsers } from '../../../src/mocks/users';
+import { fetchMDContactCard } from '../../../src/services/api';
 
 /**
  * MD profile card — accessed from Dashboard → Managing Director card.
@@ -29,17 +29,33 @@ export default function MDCardRoute() {
   const router = useRouter();
   const user = useSelector(selectCurrentUser);
 
-  // Pick the first manager in the mock directory as the "company MD".
-  const md = mockUsers.find((u) => u.role === 'manager');
+  const [md, setMd] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMD = async () => {
+      const res = await fetchMDContactCard();
+      if (res.success && res.md) {
+        setMd(res.md);
+      }
+      setLoading(false);
+    };
+    fetchMD();
+  }, []);
 
   const onCall = () => {
-    if (!md?.phone) return;
-    const sanitized = md.phone.replace(/[^\d+]/g, '');
-    Linking.openURL(`tel:${sanitized}`).catch(() => {});
+    if (md?.tel_link) {
+      Linking.openURL(md.tel_link).catch(() => {});
+    } else if (md?.phone) {
+      const sanitized = md.phone.replace(/[^\d+]/g, '');
+      Linking.openURL(`tel:${sanitized}`).catch(() => {});
+    }
   };
-  const onChat = () => {
-    if (!md?.id) return;
-    router.push(`/chat/personal/${md.id}`);
+  
+  const onWhatsApp = () => {
+    if (md?.whatsapp_link) {
+      Linking.openURL(md.whatsapp_link).catch(() => {});
+    }
   };
 
   return (
@@ -77,13 +93,13 @@ export default function MDCardRoute() {
                 <Text style={[styles.secondaryText, { color: theme.text }]}>Call</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
-                onPress={onChat}
+                style={[styles.primaryBtn, { backgroundColor: '#25D366' }]}
+                onPress={onWhatsApp}
                 activeOpacity={0.85}
-                testID="md-chat-btn"
+                testID="md-whatsapp-btn"
               >
-                <Ionicons name="chatbubbles" size={16} color="#fff" />
-                <Text style={styles.primaryText}>Message MD</Text>
+                <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+                <Text style={styles.primaryText}>WhatsApp</Text>
               </TouchableOpacity>
             </View>
           </View>

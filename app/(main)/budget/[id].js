@@ -11,6 +11,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,7 @@ import {
 import { selectCurrentUser } from '../../../src/store/slices/authSlice';
 import { normaliseRole, ROLES } from '../../../src/utils/roles';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { fetchMDContactCard } from '../../../src/services/api';
 
 const STATUS_COLORS = {
   PENDING: '#FF9500',
@@ -69,6 +71,32 @@ export default function BudgetDetailScreen() {
         .catch(err => console.log('DEBUG Classify Amount Error:', err));
     }
   }, [dispatch, request?.amount_paise]);
+
+  const [md, setMd] = useState(null);
+  useEffect(() => {
+    const fetchMD = async () => {
+      const res = await fetchMDContactCard();
+      if (res.success && res.md) {
+        setMd(res.md);
+      }
+    };
+    fetchMD();
+  }, []);
+
+  const handleContactMD = () => {
+    if (md?.tel_link) {
+      Linking.openURL(md.tel_link).catch(() => {});
+    } else if (md?.phone) {
+      const sanitized = md.phone.replace(/[^\d+]/g, '');
+      Linking.openURL(`tel:${sanitized}`).catch(() => {});
+    }
+  };
+
+  const handleWhatsAppMD = () => {
+    if (md?.whatsapp_link) {
+      Linking.openURL(md.whatsapp_link).catch(() => {});
+    }
+  };
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -188,6 +216,23 @@ export default function BudgetDetailScreen() {
             <Text style={[styles.label, { color: theme.textSecondary }]}>Reason</Text>
             <Text style={[styles.reason, { color: theme.text }]}>{request.reason || 'No reason provided'}</Text>
           </Animated.View>
+
+          {/* MD Contact Action */}
+          {md && (
+            <Animated.View entering={FadeInDown.duration(500).delay(100)} style={[styles.card, { backgroundColor: isDark ? '#1C1C1E' : theme.card, borderColor: theme.border, marginTop: -8 }]}>
+              <Text style={[styles.label, { color: theme.textSecondary, marginBottom: 8 }]}>Need help?</Text>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.border, flex: 1, flexDirection: 'row' }]} onPress={handleContactMD}>
+                  <Ionicons name="call" size={16} color={theme.text} />
+                  <Text style={{ color: theme.text, fontWeight: '600', marginLeft: 8 }}>Contact MD</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#25D366', borderWidth: 0, flex: 1, flexDirection: 'row' }]} onPress={handleWhatsAppMD}>
+                  <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 8 }}>WhatsApp</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          )}
 
           {/* Audit Log Timeline */}
           <View style={styles.timelineSection}>

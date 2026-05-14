@@ -61,7 +61,7 @@ export default function CustomerMDCardRoute() {
             <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
             <View style={styles.sitesWrapper}>
               {item.sites?.slice(0, 2).map((site, index) => (
-                <View key={index} style={[styles.siteChip, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1) ' : '#eff6ff' }]}>
+                <View key={index} style={[styles.siteChip, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff' }]}>
                   <Text style={[styles.siteChipText, { color: '#3b82f6' }]} numberOfLines={1}>
                     {typeof site === 'object' ? site.name : `Site ${site}`}
                   </Text>

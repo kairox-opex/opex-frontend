@@ -10,7 +10,8 @@ import {
   RefreshControl,
   Image,
   Animated,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -42,6 +43,7 @@ import Loader from '../../../../src/components/common/Loader';
 import { selectIsOnline } from '../../../../src/store/slices/offlineSlice';
 import Toast from '../../../../src/components/common/Toast';
 import FullScreenSpinner from '../../../../src/components/common/FullScreenSpinner';
+import { fetchMDContactCard } from '../../../../src/services/api';
 
 export default function EscalatedDetailScreen() {
   const { theme, isDark } = useTheme(); 
@@ -103,6 +105,32 @@ export default function EscalatedDetailScreen() {
       }).start();
     }
   }, [highlighted, highlightAnim]);
+
+  const [md, setMd] = useState(null);
+  useEffect(() => {
+    const fetchMD = async () => {
+      const res = await fetchMDContactCard();
+      if (res.success && res.md) {
+        setMd(res.md);
+      }
+    };
+    fetchMD();
+  }, []);
+
+  const handleContactMD = () => {
+    if (md?.tel_link) {
+      Linking.openURL(md.tel_link).catch(() => {});
+    } else if (md?.phone) {
+      const sanitized = md.phone.replace(/[^\d+]/g, '');
+      Linking.openURL(`tel:${sanitized}`).catch(() => {});
+    }
+  };
+
+  const handleWhatsAppMD = () => {
+    if (md?.whatsapp_link) {
+      Linking.openURL(md.whatsapp_link).catch(() => {});
+    }
+  };
 
   const onRefresh = useCallback(async () => {
     if (!isOnline) {
@@ -344,6 +372,30 @@ export default function EscalatedDetailScreen() {
             )}
           </View>
         </View>
+
+        {/* MD Contact Panel */}
+        {md && (
+          <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Escalation Contact</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Avatar name={md.name} size="medium" />
+                <View>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text }}>{md.name}</Text>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>Managing Director</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity onPress={handleContactMD} style={{ padding: 8, backgroundColor: iconBg, borderRadius: 8 }}>
+                  <Ionicons name="call" size={20} color={theme.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleWhatsAppMD} style={{ padding: 8, backgroundColor: 'rgba(37, 211, 102, 0.1)', borderRadius: 8 }}>
+                  <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
 
         <View style={[styles.card, styles.flatCard, { backgroundColor: surfaceColor, borderColor }]}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Metadata</Text>

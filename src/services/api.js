@@ -102,6 +102,15 @@ export const getStoredUser = async () => {
   }
 };
 
+export const fetchMDContactCard = async () => {
+  try {
+    const response = await api.get('/api/v1/me/md');
+    return { success: true, md: response.data?.md || response.data };
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch MD contact' };
+  }
+};
+
 // ==================== ISSUES API (BACKEND) ====================
 
 export const fetchIssues = async (filters = {}) => {
@@ -618,7 +627,7 @@ export const sendChatWithImage = async ({ text, sessionId, imageUri, intent }) =
 };
 
 export default {
-  loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser,
+  loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser, fetchMDContactCard,
   fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats, fetchSolversPerformanceAPI,
   fetchResolvedIssuesCard, fetchPendingIssuesCard, fetchEscalatedIssuesCard, fetchResolvedPendingIssuesCard, fetchDashboardCardIssueDetail,
   fetchSupervisors, fetchSupervisorById, fetchCustomerMDs, fetchCustomerMDById,
