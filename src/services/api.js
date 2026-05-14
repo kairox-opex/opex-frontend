@@ -460,18 +460,52 @@ export const fetchSiteBudgetHistory = async (siteId, months = 6) => {
   }
 };
 
-// ==================== SUPERVISORS API (TEMPORARY MOCK) ====================
+// ==================== SUPERVISORS API ====================
 
 export const fetchSupervisors = async () => {
-  console.warn('[BACKEND-GAP] supervisors/list: using temporary mock data');
-  const supervisors = mockUsers.filter(u => u.role === 'supervisor');
-  return { success: true, supervisors };
+  try {
+    const response = await api.get('/api/v1/supervisors');
+    // Backend might return { total, items: [...] } or just [...]
+    const supervisors = response.data?.items || response.data || [];
+    return { success: true, supervisors };
+  } catch (error) {
+    console.error('DEBUG API ERROR fetchSupervisors:', error.response?.status, error.response?.data);
+    return { success: false, supervisors: [], error: error.response?.data?.detail || 'Failed to fetch supervisors' };
+  }
 };
 
 export const fetchSupervisorById = async (id) => {
-  console.warn('[BACKEND-GAP] supervisors/detail: using temporary mock data');
-  const supervisor = mockUsers.find(u => String(u.id) === String(id));
-  return { success: true, supervisor };
+  try {
+    const response = await api.get(`/api/v1/supervisors/${id}`);
+    return { success: true, supervisor: response.data };
+  } catch (error) {
+    console.error('DEBUG API ERROR fetchSupervisorById:', id, error.response?.status, error.response?.data);
+    return { success: false, supervisor: null, error: error.response?.data?.detail || 'Failed to fetch supervisor detail' };
+  }
+};
+
+// ==================== CUSTOMER MD API ====================
+
+export const fetchCustomerMDs = async () => {
+  try {
+    const response = await api.get('/api/v1/customer-mds');
+    // Backend might return { total, items: [...] } or just [...]
+    const customerMDs = response.data?.items || response.data || [];
+    return { success: true, customerMDs };
+  } catch (error) {
+    console.error('DEBUG API ERROR fetchCustomerMDs:', error.response?.status, error.response?.data);
+    return { success: false, customerMDs: [], error: error.response?.data?.detail || 'Failed to fetch Customer MDs' };
+  }
+};
+
+export const fetchCustomerMDById = async (id) => {
+  try {
+    const response = await api.get(`/api/v1/customer-mds/${id}`);
+    return { success: true, customerMD: response.data };
+  } catch (error) {
+    console.error('DEBUG API ERROR fetchCustomerMDById:', id, error.response?.status, error.response?.data);
+    return { success: false, customerMD: null, error: error.response?.data?.detail || 'Failed to fetch Customer MD detail' };
+  }
 };
 
 // ==================== SITES & OTHERS ====================
@@ -587,7 +621,8 @@ export default {
   loginUser, getCurrentUser, logoutUser, isAuthenticated, getStoredUser,
   fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats, fetchSolversPerformanceAPI,
   fetchResolvedIssuesCard, fetchPendingIssuesCard, fetchEscalatedIssuesCard, fetchResolvedPendingIssuesCard, fetchDashboardCardIssueDetail,
-  fetchSupervisors, fetchSupervisorById, fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage,
+  fetchSupervisors, fetchSupervisorById, fetchCustomerMDs, fetchCustomerMDById,
+  fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage,
   fetchBudgetRequests, fetchBudgetTotals, classifyBudgetAmount, createBudgetRequest, fetchBudgetBurnRates,
   escApproveBudgetRequest, escRejectBudgetRequest
 

@@ -10,6 +10,8 @@ import offlineReducer from './slices/offlineSlice';
 import sitesReducer from "./slices/sitesSlice"
 import performanceReducer from "./slices/performanceSlice"
 import budgetReducer from './slices/budgetSlice';
+import supervisorsReducer from './slices/supervisorsSlice';
+import customerMDReducer from './slices/customerMDSlice';
 
 
 // 1. Combine all your reducers into one app-level reducer
@@ -25,6 +27,8 @@ const appReducer = combineReducers({
   sites: sitesReducer,
   performance: performanceReducer,
   budget: budgetReducer,
+  supervisors: supervisorsReducer,
+  customerMDs: customerMDReducer,
 
 });
 

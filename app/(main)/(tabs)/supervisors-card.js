@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,142 +6,107 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
+import { useDispatch, useSelector } from 'react-redux';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../src/theme/ThemeContext';
-import RoleGuard from '../../../src/components/navigation/RoleGuard';
+import {
+  fetchSupervisors,
+  selectAllSupervisors,
+  selectSupervisorsLoading
+} from '../../../src/store/slices/supervisorsSlice';
 import Avatar from '../../../src/components/common/Avatar';
+import RoleGuard from '../../../src/components/navigation/RoleGuard';
 import { backToDashboard } from '../../../src/utils/navigation';
-import { fetchSupervisors } from '../../../src/services/api';
 
-// For enrichment when using mock
-import { issues as mockIssues } from '../../../src/mocks/issues';
-import { sites as mockSites } from '../../../src/mocks/sites';
-
-/**
- * Supervisor directory (MD-only).
- */
 export default function SupervisorsCardRoute() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
+  const dispatch = useDispatch();
 
-  const [supervisors, setSupervisors] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
+  const supervisors = useSelector(selectAllSupervisors);
+  const loading = useSelector(selectSupervisorsLoading);
+  const [refreshing, setRefreshing] = useState(false);
 
-  React.useEffect(() => {
-    const loadData = async () => {
-      try {
-        const res = await fetchSupervisors();
-        if (res.success && Array.isArray(res.supervisors)) {
-          // Enrich data (works for both backend and mock)
-          const enriched = res.supervisors.map(u => {
-            // If backend already provided counts, use them. Otherwise calculate from mock.
-            if (u.active_issues_count !== undefined) return u;
+  useEffect(() => {
+    dispatch(fetchSupervisors());
+  }, [dispatch]);
 
-            const handled = mockIssues.filter(i => i.raised_by_supervisor_id === u.id);
-            const active = handled.filter(i => ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'ESCALATED'].includes(i.status)).length;
-            const closed = handled.filter(i => i.status === 'COMPLETED').length;
-            const escalated = handled.filter(i => i.status === 'ESCALATED').length;
-            
-            const siteIds = u.sites || [];
-            const siteObjs = Array.isArray(siteIds) ? siteIds.map(sid => typeof sid === 'object' ? sid : mockSites.find(s => s.id === sid)).filter(Boolean) : [];
-            
-            return {
-              ...u,
-              active_issues_count: active,
-              closed_issues_count: closed,
-              escalated_issues_count: escalated,
-              sites: siteObjs
-            };
-          });
-          setSupervisors(enriched);
-        }
-      } catch (err) {
-        console.error('Error loading supervisors:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await dispatch(fetchSupervisors());
+    setRefreshing(false);
+  };
 
-  if (loading) {
+  const renderSupervisorItem = ({ item }) => {
+    // Each row: name, site chips, open issues count.
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={theme.primary} />
+      <TouchableOpacity
+        style={[styles.supervisorCard, { backgroundColor: isDark ? '#1c1c1c' : '#ffffff', borderColor: isDark ? '#2e2e2e' : '#f1f5f9' }]}
+        onPress={() => router.push(`/supervisors/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardHeader}>
+          <Avatar uri={item.avatar_url || item.avatar} name={item.name} size="medium" />
+          <View style={styles.nameSection}>
+            <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
+            <View style={styles.sitesWrapper}>
+              {item.sites?.slice(0, 3).map((site, index) => (
+                <View key={index} style={[styles.siteChip, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}>
+                  <Text style={[styles.siteChipText, { color: '#3b82f6' }]} numberOfLines={1}>
+                    {typeof site === 'object' ? site.name : `Site ${site}`}
+                  </Text>
+                </View>
+              ))}
+              {item.sites?.length > 3 && (
+                <Text style={[styles.moreText, { color: theme.textSecondary }]}>+{item.sites.length - 3} more</Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.issueCountBadge}>
+            <Text style={styles.issueCountText}>{item.issue_counts?.active || 0}</Text>
+            <Text style={styles.issueCountLabel}>OPEN</Text>
+          </View>
         </View>
-      </SafeAreaView>
+      </TouchableOpacity>
     );
-  }
+  };
 
   return (
     <RoleGuard action="view:supervisorsCard">
-      <SafeAreaView edges={['top']} style={[styles.safe, { backgroundColor: theme.background }]}>
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={backToDashboard} testID="supervisors-back">
-            <Ionicons name="chevron-back" size={22} color={theme.text} />
+      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#111' : '#f9fafb' }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={[styles.header, { backgroundColor: isDark ? '#111' : '#ffffff', borderBottomColor: isDark ? '#2e2e2e' : '#f1f5f9' }]}>
+          <TouchableOpacity onPress={backToDashboard} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={26} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Supervisors</Text>
-          <View style={{ width: 22 }} />
+          <Text style={[styles.headerTitle, { color: theme.text }]}>MD Team — Supervisors</Text>
+          <View style={{ width: 40 }} />
         </View>
+
         <FlatList
           data={supervisors}
-          keyExtractor={(s) => String(s.id)}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => {
-            const rawSites = item.sites;
-            const sitesArr = Array.isArray(rawSites) ? rawSites : [];
-            const siteNames = sitesArr.map(s => s?.name).filter(Boolean);
-            
-            const sitesLabel = siteNames.length > 0 
-              ? (siteNames.slice(0, 2).join(' · ') + (siteNames.length > 2 ? ` +${siteNames.length - 2}` : ''))
-              : '';
-
-            return (
-              <TouchableOpacity
-                style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
-                activeOpacity={0.7}
-                onPress={() => router.push(`/supervisors/${item.id}`)}
-              >
-                <Avatar name={item.name} uri={item.avatar_url || item.avatar} size={50} />
-                <View style={{ flex: 1, marginLeft: 14 }}>
-                  <View style={styles.nameRow}>
-                    <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
-                  </View>
-                  
-
-
-                  {siteNames.length > 0 && (
-                    <View style={styles.siteRow}>
-                      <Ionicons name="business-outline" size={12} color={theme.primary} />
-                      <Text style={[styles.sub, { color: theme.textSecondary }]} numberOfLines={1}>
-                        {sitesLabel}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.metaRow}>
-                    <View style={[styles.badge, { backgroundColor: theme.warningLight }]}>
-                      <Text style={[styles.badgeText, { color: theme.warning }]}>{item.active_issues_count || 0} active</Text>
-                    </View>
-                    <View style={[styles.badge, { backgroundColor: theme.successLight }]}>
-                      <Text style={[styles.badgeText, { color: theme.success }]}>{item.closed_issues_count || 0} closed</Text>
-                    </View>
-                    {item.escalated_issues_count > 0 && (
-                      <View style={[styles.badge, { backgroundColor: '#fee2e2' }]}>
-                        <Text style={[styles.badgeText, { color: '#ef4444' }]}>{item.escalated_issues_count} escalated</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-              </TouchableOpacity>
-            );
-          }}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderSupervisorItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+          }
+          ListEmptyComponent={
+            loading ? (
+              <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 50 }} />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="people-outline" size={48} color={theme.textSecondary} />
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No Supervisors Found</Text>
+              </View>
+            )
+          }
         />
       </SafeAreaView>
     </RoleGuard>
@@ -149,20 +114,86 @@ export default function SupervisorsCardRoute() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  headerTitle: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  list: { paddingVertical: 12, paddingHorizontal: 16, gap: 12, paddingBottom: 80 },
-  card: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { fontSize: 16, fontWeight: '700' },
-  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
-  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  contactText: { fontSize: 12, fontWeight: '500' },
-  siteRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  sub: { fontSize: 12, opacity: 0.8 },
-  metaRow: { flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  badgeText: { fontSize: 10, fontWeight: '700' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  headerTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  backBtn: { padding: 4 },
+  listContent: { padding: 16, paddingBottom: 40 },
+  supervisorCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  nameSection: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  sitesWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  },
+  siteChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  siteChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  moreText: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  issueCountBadge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    minWidth: 45,
+  },
+  issueCountText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ef4444',
+  },
+  issueCountLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#9ca3af',
+    marginTop: -2,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 100,
+  },
+  emptyText: {
+    fontSize: 14,
+    marginTop: 12,
+    fontWeight: '500',
+  },
 });

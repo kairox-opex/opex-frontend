@@ -17,24 +17,24 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import Avatar from '../../../src/components/common/Avatar';
 import { 
-  fetchSupervisorById, 
-  selectCurrentSupervisor, 
-  selectSupervisorsLoading,
-  clearCurrentSupervisor 
-} from '../../../src/store/slices/supervisorsSlice';
+  fetchCustomerMDById, 
+  selectCurrentCustomerMD, 
+  selectCustomerMDsLoading,
+  clearCurrentCustomerMD 
+} from '../../../src/store/slices/customerMDSlice';
 
-export default function SupervisorDetailScreen() {
+export default function CustomerMDDetailScreen() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const dispatch = useDispatch();
 
-  const supervisor = useSelector(selectCurrentSupervisor);
-  const loading = useSelector(selectSupervisorsLoading);
+  const cmd = useSelector(selectCurrentCustomerMD);
+  const loading = useSelector(selectCustomerMDsLoading);
 
   useEffect(() => {
-    dispatch(fetchSupervisorById(id));
-    return () => dispatch(clearCurrentSupervisor());
+    dispatch(fetchCustomerMDById(id));
+    return () => dispatch(clearCurrentCustomerMD());
   }, [dispatch, id]);
 
   const handleLink = async (url) => {
@@ -51,7 +51,7 @@ export default function SupervisorDetailScreen() {
     }
   };
 
-  if (loading || !supervisor) {
+  if (loading || !cmd) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.center}>
@@ -61,27 +61,16 @@ export default function SupervisorDetailScreen() {
     );
   }
 
-  // Statistics
-  const activeCount = supervisor.issue_counts?.active || 0;
-  const closedCount = supervisor.issue_counts?.closed || 0;
-  const escalatedCount = supervisor.issue_counts?.escalated || 0;
-  const totalCount = supervisor.issue_counts?.total || 0;
-
-  const stats = [
-    { label: 'Active Issues', value: activeCount, icon: 'alert-circle-outline', color: '#f59e0b' },
-    { label: 'Closed Issues', value: closedCount, icon: 'checkmark-circle-outline', color: '#10b981' },
-    { label: 'Escalated', value: escalatedCount, icon: 'warning-outline', color: '#ef4444' },
-    { label: 'Total Issues', value: totalCount, icon: 'document-text-outline', color: '#6366f1' },
-  ];
-
+  // Budget Statistics
   const budgetStats = [
-    { label: 'Pending', value: supervisor.budget_counts?.pending || 0, color: '#f59e0b' },
-    { label: 'Approved', value: supervisor.budget_counts?.approved || 0, color: '#10b981' },
-    { label: 'Total Value', value: `₹${((supervisor.budget_counts?.total_value || 0) / 100000).toFixed(1)}L`, color: '#6366f1' },
+    { label: 'Escalated', value: cmd.budget_stats?.escalated || 0, icon: 'warning-outline', color: '#f59e0b' },
+    { label: 'Approved', value: cmd.budget_stats?.approved || 0, icon: 'checkmark-circle-outline', color: '#10b981' },
+    { label: 'Rejected', value: cmd.budget_stats?.rejected || 0, icon: 'close-circle-outline', color: '#ef4444' },
+    { label: 'Total Approved', value: `₹${((cmd.budget_stats?.total_approved_amount || 0) / 100000).toFixed(1)}L`, icon: 'wallet-outline', color: '#6366f1' },
   ];
 
   // Assigned Sites
-  const assignedSites = supervisor.sites || [];
+  const assignedSites = cmd.sites || [];
 
   const bgColor = isDark ? '#111111' : '#f9fafb';
   const surfaceColor = isDark ? '#1c1c1c' : '#ffffff';
@@ -96,10 +85,10 @@ export default function SupervisorDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
           <Ionicons name="chevron-back" size={26} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Supervisor Profile</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Customer MD Profile</Text>
         <TouchableOpacity 
           style={styles.chatButton} 
-          onPress={() => router.push(`/chat/personal/${supervisor.id}`)}
+          onPress={() => router.push(`/chat/personal/${cmd.id}`)}
         >
           <Ionicons name="chatbubble-ellipses" size={24} color={isDark ? '#ffffff' : theme.primary} />
         </TouchableOpacity>
@@ -108,58 +97,42 @@ export default function SupervisorDetailScreen() {
       <ScrollView style={[styles.content, { backgroundColor: bgColor }]} showsVerticalScrollIndicator={false}>
         <View style={[styles.profileSection, { backgroundColor: surfaceColor }]}>
           <View style={styles.avatarWrapper}>
-            <Avatar uri={supervisor.avatar_url || supervisor.avatar} name={supervisor.name || 'S'} size="xlarge" />
+            <Avatar uri={cmd.avatar_url || cmd.avatar} name={cmd.name || 'C'} size="xlarge" />
           </View>
-          <Text style={[styles.name, { color: theme.text }]}>{supervisor.name || 'Supervisor'}</Text>
+          <Text style={[styles.name, { color: theme.text }]}>{cmd.name || 'Customer MD'}</Text>
           <View style={[styles.roleBadge, { backgroundColor: blueBadgeBg }]}>
-            <Text style={[styles.roleText, { color: blueBadgeText }]}>SUPERVISOR</Text>
+            <Text style={[styles.roleText, { color: blueBadgeText }]}>CUSTOMER MD</Text>
           </View>
-          <Text style={styles.empIdText}>EMP-{supervisor.id || '000'}-OPS</Text>
+          <Text style={styles.empIdText}>{cmd.company || 'Partner Enterprise'}</Text>
 
           <View style={styles.contactActions}>
-            {supervisor.tel_link && (
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]} onPress={() => handleLink(supervisor.tel_link)}>
+            {cmd.tel_link && (
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]} onPress={() => handleLink(cmd.tel_link)}>
                 <Ionicons name="call" size={20} color="#fff" />
               </TouchableOpacity>
             )}
-            {supervisor.whatsapp_link && (
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#25d366' }]} onPress={() => handleLink(supervisor.whatsapp_link)}>
+            {cmd.whatsapp_link && (
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#25d366' }]} onPress={() => handleLink(cmd.whatsapp_link)}>
                 <Ionicons name="logo-whatsapp" size={20} color="#fff" />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* Issue Stats Panel */}
+        {/* Budget Approval Stats Panel */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderLeft}>
-            <Ionicons name="stats-chart-outline" size={16} color={theme.textSecondary} />
-            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>ISSUE STATISTICS</Text>
+            <Ionicons name="wallet-outline" size={16} color={theme.textSecondary} />
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>BUDGET APPROVAL SUMMARY</Text>
           </View>
           <View style={styles.statsGrid}>
-            {stats.map((stat, index) => (
+            {budgetStats.map((stat, index) => (
               <View key={index} style={[styles.statCard, { backgroundColor: surfaceColor, borderColor }]}>
                 <View style={[styles.statIconWrap, { backgroundColor: stat.color + '15' }]}>
                   <Ionicons name={stat.icon} size={20} color={stat.color} />
                 </View>
                 <Text style={[styles.statValue, { color: theme.text }]}>{stat.value}</Text>
                 <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Budget Stats Panel */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderLeft}>
-            <Ionicons name="wallet-outline" size={16} color={theme.textSecondary} />
-            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>BUDGET STATISTICS</Text>
-          </View>
-          <View style={styles.budgetStatsRow}>
-            {budgetStats.map((stat, index) => (
-              <View key={index} style={[styles.budgetStatItem, { backgroundColor: surfaceColor, borderColor }]}>
-                <Text style={[styles.budgetStatValue, { color: stat.color }]}>{stat.value}</Text>
-                <Text style={[styles.budgetStatLabel, { color: theme.textSecondary }]}>{stat.label}</Text>
               </View>
             ))}
           </View>
@@ -184,7 +157,7 @@ export default function SupervisorDetailScreen() {
                     </View>
                     <View style={styles.infoTextContainer}>
                       <Text style={[styles.infoValue, { color: theme.text }]}>{site.name || 'Unknown Site'}</Text>
-                      <Text style={styles.infoLabel}>{site.location || 'Active Site'}</Text>
+                      <Text style={styles.infoLabel}>{site.location || 'Managed Site'}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
                   </TouchableOpacity>
@@ -194,6 +167,29 @@ export default function SupervisorDetailScreen() {
             ) : (
               <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No sites assigned.</Text>
             )}
+          </View>
+        </View>
+
+        {/* Contact Info */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderLeft}>
+            <Ionicons name="mail-outline" size={16} color={theme.textSecondary} />
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>CONTACT DETAILS</Text>
+          </View>
+          <View style={[styles.infoContainer, { backgroundColor: surfaceColor, borderColor }]}>
+            <View style={styles.infoRow}>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.infoLabel}>Email Address</Text>
+                <Text style={[styles.infoValue, { color: theme.text }]}>{cmd.email || 'N/A'}</Text>
+              </View>
+            </View>
+            <View style={[styles.separator, { backgroundColor: borderColor, marginLeft: 16 }]} />
+            <View style={styles.infoRow}>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.infoLabel}>Phone Number</Text>
+                <Text style={[styles.infoValue, { color: theme.text }]}>{cmd.phone || 'N/A'}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -216,7 +212,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5, marginTop: 16, marginBottom: 8 },
   roleBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
   roleText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
-  empIdText: { fontSize: 10, color: '#9ca3af', marginTop: 10, fontWeight: '600', letterSpacing: 1.5 },
+  empIdText: { fontSize: 12, color: '#9ca3af', marginTop: 10, fontWeight: '600' },
   contactActions: { flexDirection: 'row', gap: 16, marginTop: 20 },
   actionBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
   section: { marginTop: 24, paddingHorizontal: 20 },
@@ -225,13 +221,10 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   statCard: { flex: 1, minWidth: '45%', padding: 16, borderRadius: 16, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 6, elevation: 1 },
   statIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  statValue: { fontSize: 20, fontWeight: '700', marginBottom: 2 },
+  statValue: { fontSize: 18, fontWeight: '700', marginBottom: 2 },
   statLabel: { fontSize: 11, fontWeight: '600' },
-  budgetStatsRow: { flexDirection: 'row', gap: 10 },
-  budgetStatItem: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center' },
-  budgetStatValue: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
-  budgetStatLabel: { fontSize: 10, fontWeight: '600' },
   infoContainer: { borderRadius: 16, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 6, elevation: 1 },
+  infoRow: { padding: 16 },
   siteRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   siteIconCircle: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   infoTextContainer: { flex: 1 },
