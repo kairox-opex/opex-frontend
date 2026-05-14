@@ -397,6 +397,34 @@ export const escalateBudgetRequest = async (requestId, note = '') => {
   }
 };
 
+// POST /budget/requests/{request_id}/esc-approve — Customer MD approves
+export const escApproveBudgetRequest = async (requestId, note = '') => {
+  try {
+    const response = await api.post(`/api/v1/budget/requests/${requestId}/esc-approve`, { note });
+    return { success: true, data: response.data };
+  } catch (error) {
+    let errorMessage = 'Failed to approve escalated request';
+    const detail = error.response?.data?.detail;
+    if (Array.isArray(detail) && detail.length > 0) errorMessage = detail[0].msg;
+    else if (typeof detail === 'string') errorMessage = detail;
+    return { success: false, error: errorMessage };
+  }
+};
+
+// POST /budget/requests/{request_id}/esc-reject — Customer MD rejects
+export const escRejectBudgetRequest = async (requestId, note = '') => {
+  try {
+    const response = await api.post(`/api/v1/budget/requests/${requestId}/esc-reject`, { note });
+    return { success: true, data: response.data };
+  } catch (error) {
+    let errorMessage = 'Failed to reject escalated request';
+    const detail = error.response?.data?.detail;
+    if (Array.isArray(detail) && detail.length > 0) errorMessage = detail[0].msg;
+    else if (typeof detail === 'string') errorMessage = detail;
+    return { success: false, error: errorMessage };
+  }
+};
+
 // GET /budget/sites/{site_id} — MTD budget summary for a single site
 export const fetchSiteBudgetSummary = async (siteId) => {
   try {
@@ -553,6 +581,7 @@ export default {
   fetchIssues, fetchIssueById, fetchIssueTimeline, fetchDashboardStats, fetchSolversPerformanceAPI,
   fetchResolvedIssuesCard, fetchPendingIssuesCard, fetchEscalatedIssuesCard, fetchResolvedPendingIssuesCard, fetchDashboardCardIssueDetail,
   fetchSupervisors, fetchSupervisorById, fetchSites, fetchSitesAnalytics, fetchComplaints, fetchComplaintById, sendChatMessage, sendChatWithImage,
-  fetchBudgetRequests, fetchBudgetTotals, classifyBudgetAmount, createBudgetRequest, fetchBudgetBurnRates
+  fetchBudgetRequests, fetchBudgetTotals, classifyBudgetAmount, createBudgetRequest, fetchBudgetBurnRates,
+  escApproveBudgetRequest, escRejectBudgetRequest
 
 };

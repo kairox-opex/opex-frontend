@@ -9,7 +9,9 @@ import {
   fetchBudgetRequestById as fetchBudgetRequestByIdApi,
   acceptBudgetRequest as acceptBudgetRequestApi,
   rejectBudgetRequest as rejectBudgetRequestApi,
-  escalateBudgetRequest as escalateBudgetRequestApi
+  escalateBudgetRequest as escalateBudgetRequestApi,
+  escApproveBudgetRequest as escApproveBudgetRequestApi,
+  escRejectBudgetRequest as escRejectBudgetRequestApi
 } from '../../services/api';
 
 const initialState = {
@@ -175,8 +177,10 @@ export const updateRequestStatus = createAsyncThunk(
       if (type === 'ACCEPT') result = await acceptBudgetRequestApi(id, note);
       else if (type === 'REJECT') result = await rejectBudgetRequestApi(id, note);
       else if (type === 'ESCALATE') result = await escalateBudgetRequestApi(id, note);
+      else if (type === 'ESC_ACCEPT') result = await escApproveBudgetRequestApi(id, note);
+      else if (type === 'ESC_REJECT') result = await escRejectBudgetRequestApi(id, note);
 
-      if (!result.success) return rejectWithValue(result.error);
+      if (!result?.success) return rejectWithValue(result?.error || 'Unknown error');
       return { id, type, data: result.data };
     } catch (error) {
       return rejectWithValue(error.message);
