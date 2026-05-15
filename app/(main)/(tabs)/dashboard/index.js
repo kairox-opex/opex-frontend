@@ -17,6 +17,10 @@ import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 
 import { useTheme } from '../../../../src/theme/ThemeContext';
 import { selectCurrentUser } from '../../../../src/store/slices/authSlice';
+import { 
+  fetchMDContactCard,
+  fetchPersonalThreads
+} from '../../../../src/services/api';
 import {
   fetchDashboardData,
   selectStats,
@@ -88,6 +92,10 @@ export default function DashboardScreen() {
       if (currentRole === ROLES.MANAGER) {
         dispatch(fetchThresholdAlerts());
       }
+
+      // FLOW STEP 1: Preparing chat threads
+      console.log('--- FLOW STEP 1: Dashboard Chat Initialization ---');
+      fetchPersonalThreads();
     }
   }, [user, dispatch, currentRole]);
 
@@ -521,7 +529,7 @@ export default function DashboardScreen() {
                       count={null}
                       icon="person-circle-outline"
                       color="#3b82f6"
-                      onPress={() => router.push('/(main)/(tabs)/md-card')}
+                      onPress={() => router.push('/(main)/managing-directors')}
                     />
                     <DashboardCard
                       title="Budget Request"
@@ -643,7 +651,7 @@ export default function DashboardScreen() {
                       count={null}
                       icon="person-circle-outline"
                       color="#3b82f6"
-                      onPress={() => router.push('/(main)/(tabs)/md-card')}
+                      onPress={() => router.push('/(main)/managing-directors')}
                     />
                     <DashboardCard
                       title="Budget"
