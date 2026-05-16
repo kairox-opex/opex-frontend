@@ -40,16 +40,17 @@ export default function MDCardRoute() {
     const fetchMD = async () => {
       setLoading(true);
       const res = await fetchMDContactCard();
+      console.log('--- MD CONTACT CARD RESPONSE ---', res);
+      
       if (res.success && res.md) {
         setMd(res.md);
         
-        // Testing the flow APIs
-        console.log('--- FLOW START: Supervisor checking MD Threads ---');
-        await fetchPersonalThreads();
-        
+        // FLOW STEP 2: Triggered when viewing the MD's "profile" (this card)
         if (res.md.id) {
           console.log(`--- FLOW STEP 2: Opening thread with MD ID: ${res.md.id} ---`);
           await openPersonalThread(res.md.id);
+        } else {
+          console.error('--- ERROR: MD ID is missing in the response (Step 2 failed) ---');
         }
       }
       setLoading(false);
