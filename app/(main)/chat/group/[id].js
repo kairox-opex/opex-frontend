@@ -39,7 +39,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 /* ─── Animated Header ────────────────────────────────────────────── */
-const AnimatedHeader = ({ group, pinnedCount, showPinned, setShowPinned, onBack, onDelete, canDelete, theme, isDark }) => {
+const AnimatedHeader = ({ group, pinnedCount, showPinned, setShowPinned, onBack, onDelete, canDelete, theme, isDark, onTitlePress }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-20)).current;
 
@@ -50,7 +50,7 @@ const AnimatedHeader = ({ group, pinnedCount, showPinned, setShowPinned, onBack,
     ]).start();
   }, []);
 
-  const memberCount = group?.member_ids?.length || 0;
+  const memberCount = group?.member_count || group?.member_ids?.length || 0;
 
   return (
     <Animated.View
@@ -81,9 +81,13 @@ const AnimatedHeader = ({ group, pinnedCount, showPinned, setShowPinned, onBack,
         <View style={[styles.onlineDot, { borderColor: isDark ? '#111827' : '#ffffff' }]} />
       </View>
 
-      <View style={{ flex: 1, marginLeft: 12 }}>
+      <TouchableOpacity 
+        style={{ flex: 1, marginLeft: 12 }}
+        onPress={onTitlePress}
+        activeOpacity={0.7}
+      >
         <Text style={[styles.headerName, { color: theme.text }]} numberOfLines={1}>
-          {group?.name || 'Loading...'}
+          {group?.title || group?.name || 'Loading...'}
         </Text>
         <View style={styles.headerMetaRow}>
           <View style={[styles.metaBadge, { backgroundColor: isDark ? 'rgba(59,130,246,0.1)' : '#eff6ff' }]}>
@@ -97,7 +101,7 @@ const AnimatedHeader = ({ group, pinnedCount, showPinned, setShowPinned, onBack,
             </View>
           )}
         </View>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.headerActions}>
         {pinnedCount > 0 && (
@@ -472,6 +476,7 @@ export default function GroupChatDetail() {
           canDelete={canDelete}
           theme={theme}
           isDark={isDark}
+          onTitlePress={() => router.push({ pathname: '/(main)/chat/group/info', params: { id: group?.id } })}
         />
 
         {showPinned && pinnedMessages.length > 0 && (
@@ -485,19 +490,22 @@ export default function GroupChatDetail() {
               data={messages}
               keyExtractor={(m) => m.id}
               contentContainerStyle={styles.list}
-              ListEmptyComponent={<EmptyState groupName={group?.name} theme={theme} isDark={isDark} />}
+              ListEmptyComponent={<EmptyState groupName={group?.title || group?.name} theme={theme} isDark={isDark} />}
               renderItem={({ item }) => {
                 if (item.type === 'ai_summary') {
                   return <AIMonthlySummary summary={item.summary} period={item.period} />;
                 }
-                const isOwn = item.sender_id === me?.id;
+                const senderId = item.sender?.id || item.sender_id;
+                const isOwn = senderId === me?.id;
                 const isPinned = (group?.pinned_ids || []).includes(item.id);
+                const finalSenderName = item.sender?.name || senderName(senderId);
+
                 return (
                   <MessageRow
                     item={{ ...item, text: item.body || item.text, ts: item.created_at || item.ts }}
                     isOwn={isOwn}
                     isPinned={isPinned}
-                    senderName={senderName(item.sender_id)}
+                    senderName={finalSenderName}
                     canPin={canPin}
                     onPin={onPin}
                     theme={theme}
@@ -515,7 +523,7 @@ export default function GroupChatDetail() {
             sending={sending}
             theme={theme}
             isDark={isDark}
-            groupName={group?.name || 'Group'}
+            groupName={group?.title || group?.name || 'Group'}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>

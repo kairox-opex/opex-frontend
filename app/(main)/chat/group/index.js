@@ -75,7 +75,7 @@ export default function GroupListScreen() {
   };
 
   const filteredGroups = groups.filter(g => 
-    g.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (g.title || g.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatTime = (ts) => {
@@ -117,7 +117,7 @@ export default function GroupListScreen() {
         <View style={styles.groupInfo}>
           <View style={styles.groupHeader}>
             <Text style={[styles.groupName, { color: theme.text }]} numberOfLines={1}>
-              {item.name}
+              {item.title || item.name}
             </Text>
             <Text style={[styles.timeText, { color: theme.textSecondary }]}>
               {formatTime(lastMsgTs)}

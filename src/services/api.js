@@ -584,7 +584,7 @@ export const fetchComplaints = async ({ cursor = null, limit = 20, issue_id = nu
     // CursorPage returns { items, next_cursor, has_more, total_returned }
     return { success: true, complaints: response.data };
   } catch (error) {
-    console.error("fetchComplaints error:", error);
+    console.warn("fetchComplaints warn:", error.message);
     return { success: false, complaints: { items: [], has_more: false } };
   }
 };
@@ -697,7 +697,8 @@ export const sendChatWithImage = async ({ text, sessionId, imageUri, intent }) =
 export const fetchGroupChats = async () => {
   try {
     const response = await api.get('/api/v1/group-chats');
-    return { success: true, data: response.data };
+    const data = response.data?.items || response.data || [];
+    return { success: true, data };
   } catch (error) {
     console.warn('DEBUG API ERROR fetchGroupChats:', error.response?.status, error.response?.data);
     return { success: false, data: [], error: error.response?.data?.detail || 'Failed to fetch group chats' };

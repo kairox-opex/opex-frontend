@@ -464,7 +464,7 @@ export default function DashboardScreen() {
               <View style={styles.statsRow}>
                 <DashboardCard
                   title="Complaints Logged"
-                  count={complaintsList?.filter(c => c.target_solver_id === user?.id)?.length || 0}
+                  count={complaintsList?.length || 0}
                   icon="warning-outline"
                   color="#ef4444"
                   style={styles.fullWidthCard}
