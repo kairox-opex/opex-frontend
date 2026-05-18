@@ -55,7 +55,10 @@ export default function ManagingDirectorsListScreen() {
   const renderMDItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.mdCard, { backgroundColor: isDark ? '#1c1c1c' : '#ffffff', borderColor: isDark ? '#2e2e2e' : '#f1f5f9' }]}
-      onPress={() => router.push(`/managing-directors/${item.id || 'md-profile'}`)}
+      onPress={() => {
+        console.log('--- NAVIGATING TO MD PROFILE WITH ID:', item.id, '---');
+        router.push(`/managing-directors/${item.id || 'md-profile'}`);
+      }}
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>

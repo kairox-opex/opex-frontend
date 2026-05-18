@@ -23,17 +23,28 @@ export default function MDProfileScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!id) return; // Wait for route param
+
     const loadProfile = async () => {
+      console.log('--- LOADING MD PROFILE FOR ID:', id, '---');
       setLoading(true);
       const res = await fetchMDContactCard();
+      console.log('--- MD PROFILE API RES:', res, '---');
+
       if (res.success && res.md) {
-        setMd(res.md);
+        const list = Array.isArray(res.md) ? res.md : [res.md];
+        // Safely find the MD by comparing ID strings
+        const foundMd = list.find(m => String(m.id) === String(id));
         
-        // FLOW STEP 2: Initialize thread
-        const targetId = id === 'md-profile' ? res.md.id : id;
-        if (targetId) {
-          console.log(`--- FLOW STEP 2: Opening thread with MD ID: ${targetId} ---`);
-          await openPersonalThread(targetId);
+        console.log('--- FOUND MD:', foundMd, '---');
+        
+        if (foundMd) {
+          setMd(foundMd);
+          console.log(`--- FLOW STEP 2: Initializing thread with ID: ${foundMd.id} ---`);
+          await openPersonalThread(foundMd.id);
+        } else {
+          console.log('--- ERROR: MD ID NOT IN LIST, FALLBACK TO INDEX 0 ---');
+          setMd(list[0]);
         }
       }
       setLoading(false);
