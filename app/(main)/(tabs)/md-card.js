@@ -43,12 +43,16 @@ export default function MDCardRoute() {
       console.log('--- MD CONTACT CARD RESPONSE ---', res);
       
       if (res.success && res.md) {
-        setMd(res.md);
+        // Backend now returns an array, so we take the first MD if it's an array
+        const list = Array.isArray(res.md) ? res.md : [res.md];
+        const primaryMd = list[0];
+        
+        setMd(primaryMd);
         
         // FLOW STEP 2: Triggered when viewing the MD's "profile" (this card)
-        if (res.md.id) {
-          console.log(`--- FLOW STEP 2: Opening thread with MD ID: ${res.md.id} ---`);
-          await openPersonalThread(res.md.id);
+        if (primaryMd && primaryMd.id) {
+          console.log(`--- FLOW STEP 2: Opening thread with MD ID: ${primaryMd.id} ---`);
+          await openPersonalThread(primaryMd.id);
         } else {
           console.error('--- ERROR: MD ID is missing in the response (Step 2 failed) ---');
         }

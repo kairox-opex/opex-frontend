@@ -521,7 +521,7 @@ export default function DashboardScreen() {
                       count={null}
                       icon="person-circle-outline"
                       color="#3b82f6"
-                      onPress={() => router.push('/(main)/(tabs)/md-card')}
+                      onPress={() => router.push('/(main)/managing-directors')}
                     />
                     <DashboardCard
                       title="Budget Request"
@@ -643,7 +643,7 @@ export default function DashboardScreen() {
                       count={null}
                       icon="person-circle-outline"
                       color="#3b82f6"
-                      onPress={() => router.push('/(main)/(tabs)/md-card')}
+                      onPress={() => router.push('/(main)/managing-directors')}
                     />
                     <DashboardCard
                       title="Budget"
