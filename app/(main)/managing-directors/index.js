@@ -21,7 +21,8 @@ export default function ManagingDirectorsListScreen() {
   const { theme, isDark } = useTheme();
   const router = useRouter();
 
-  const [mdList, setMdList] = useState([]);
+ const [mdList, setMdList] = useState([]);
+ 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
