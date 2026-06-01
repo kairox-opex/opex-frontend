@@ -664,7 +664,7 @@ export const sendPersonalChatMessage = async (threadId, body, imageUrls = []) =>
 export const sendChatMessage = async (text, sessionId, currentIssueId, imageUrl, intent) => {
   try {
     const requestBody = { message: text, session_id: sessionId, issue_id: currentIssueId, image_url: imageUrl, intent: intent };
-    const response = await api.post('/api/v1/chat/', requestBody);
+    const response = await api.post('/api/v1/chat', requestBody);
     return { success: true, data: response.data };
   } catch (error) {
     return { success: false };
