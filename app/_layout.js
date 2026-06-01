@@ -56,6 +56,7 @@ function AppContent() {
     };
 
     runGuard();
+    console.log("run guard")
   }, [isInitialized, isAuthenticated, segments, pathname, isSplashVisible]);
 
   
